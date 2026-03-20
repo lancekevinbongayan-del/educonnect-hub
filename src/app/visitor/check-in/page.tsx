@@ -108,7 +108,7 @@ export default function VisitorCheckIn() {
               <CheckCircle2 className="h-16 w-16 text-primary" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold mb-4 text-white">Check-in Confirmed</h2>
+          <h2 className="text-3xl font-bold mb-4 text-white">Welcome to NEU Library!</h2>
           <p className="text-white/60 mb-10 leading-relaxed">
             Thank you for checking in, <span className="text-white font-medium">{user.name}</span>. Your visit to the <span className="text-white font-medium">{office}</span> ({department}) as <span className="text-white font-medium">{classification}</span> is now logged.
           </p>
