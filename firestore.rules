@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * EduConnect Hub Security Rules
+     * 
+     * Philosophy:
+     * This ruleset implements a dual-access model: Ownership-based access for visitors and 
+     * Database-Backed Access Control (DBAC) for administrators. Security is prioritized 
+     * by using denormalized data within documents to ensure fast, independent authorization 
+     * decisions without excessive cross-document lookups.
+     * 
+     * Data Structure:
+     * - /users/{userId}: Private user profiles containing classification and status.
+     * - /visits/{visitId}: A flat collection of visit logs. This is the primary 
+     *   entity for the Admin Dashboard, containing denormalized user and department info.
+     * - /departments, /reason_for_visits, /visitor_classifications: Master data 
+     *   lists used for populating UI forms.
+     * - /admin_roles/{adminUid}: A marker collection where the presence of a 
+     *   document grants global administrative privileges.
+     * 
+     * Key Security Decisions:
+     * 1. Authorization Independence: The 'Visit' entity includes 'userId' and 'userType' 
+     *    internally, allowing rules to verify access without fetching the 'User' profile.
+     * 2. DBAC: Admin status is verified via an `exists()` check on the 'admin_roles' collection.
+     * 3. Immutability: Critical relational fields (like 'userId' in a visit or 'id' in a user 
+     *    profile) are enforced as immutable to prevent account hijacking or data corruption.
+     * 4. Structural Segregation: Administrative markers are separated from user profiles 
+     *    to prevent accidental privilege escalation via profile updates.
+     */
+
+    // --- Global Helper Functions ---
+
+    /**
+     * @description Checks if the request is from a signed-in user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the provided UID matches the authenticated user's UID.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is registered in the admin_roles collection.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admin_roles/$(request.auth.uid));
+    }
+
+    /**
+     * @description Combines existence and ownership checks for updates and deletes.
+     */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description User profile management. Users control their own data; Admins manage all.
+     * @path /users/{userId}
+     * @allow Authenticated user with UID 'abc' (get, update) if userId is 'abc'.
+     * @deny User 'abc' (update) if attempting to change their internal 'id' field.
+     * @principle Enforces path-based ownership and relational integrity for profile IDs.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if (isOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id;
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Records of individual visits. Denormalized for dashboard efficiency.
+     * @path /visits/{visitId}
+     * @allow Visitor 'user_123' (create) if 'userId' field matches 'user_123'.
+     * @deny Visitor 'user_123' (update) if attempting to change the 'userId' of an existing record.
+     * @principle Uses denormalized ownership fields to authorize transactional logs.
+     */
+    match /visits/{visitId} {
+      allow get: if isAdmin() || (resource != null && isOwner(resource.data.userId));
+      allow list: if isAdmin(); // CRITICAL: Path-based list not possible for visitors in top-level collection.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if (isAdmin() || isExistingOwner(resource.data.userId)) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Master list of college departments.
+     * @path /departments/{departmentId}
+     * @allow Any signed-in user (get, list).
+     * @deny Any visitor (create, update, delete).
+     * @principle Provides read-only access to configuration data for visitors.
+     */
+    match /departments/{departmentId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Master list of reasons for visiting.
+     * @path /reason_for_visits/{reasonForVisitId}
+     * @allow Any signed-in user (get, list).
+     * @deny Any visitor (create, update, delete).
+     * @principle Restricted administrative control over operational metadata.
+     */
+    match /reason_for_visits/{reasonForVisitId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Master list of visitor classifications.
+     * @path /visitor_classifications/{classificationId}
+     * @allow Any signed-in user (get, list).
+     * @deny Any visitor (create, update, delete).
+     * @principle Centralized classification management for reporting accuracy.
+     */
+    match /visitor_classifications/{classificationId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    /**
+     * @description Marker collection for defining administrators.
+     * @path /admin_roles/{adminUid}
+     * @allow Signed-in user (get) to verify their own admin status.
+     * @deny Any user (create, update, delete) except via existing admins or system processes.
+     * @principle Implements DBAC (Database-Backed Access Control) via document existence.
+     */
+    match /admin_roles/{adminUid} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
