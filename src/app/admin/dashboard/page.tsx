@@ -56,7 +56,7 @@ const CLASSIFICATIONS = [
   'Faculty',
   'Staff',
   'Guest',
-  'Employee' // Custom filter for Faculty + Staff
+  'Employee'
 ];
 
 export default function AdminDashboard() {
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
                             <Badge variant="outline" className="text-[9px] h-4 font-normal text-white/30 border-white/10 px-1">
                               {visit.classification}
                             </Badge>
-                            <p className="text-[10px] text-white/40 truncate">{visit.reason} • {visit.department}</p>
+                            <p className="text-[10px] text-white/40 truncate">{visit.reason} • {visit.office} • {visit.department}</p>
                           </div>
                         </div>
                       </div>

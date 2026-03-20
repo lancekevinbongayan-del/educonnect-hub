@@ -16,6 +16,7 @@ export interface Visit {
   userEmail: string;
   userName: string;
   department: string;
+  office: string;
   reason: string;
   timestamp: string;
   classification: string;
@@ -29,8 +30,8 @@ const INITIAL_USERS: User[] = [
 ];
 
 const INITIAL_VISITS: Visit[] = [
-  { id: 'v1', userEmail: 'visitor1@neu.edu.ph', userName: 'Juan Dela Cruz', department: 'Library', reason: 'Research', timestamp: new Date(Date.now() - 3600000).toISOString(), classification: 'Student' },
-  { id: 'v2', userEmail: 'visitor2@neu.edu.ph', userName: 'Maria Santos', department: 'Dean\'s Office', reason: 'Submission of Documents', timestamp: new Date(Date.now() - 86400000).toISOString(), classification: 'Student' },
+  { id: 'v1', userEmail: 'visitor1@neu.edu.ph', userName: 'Juan Dela Cruz', department: 'College of Computer Studies', office: 'Library', reason: 'Research', timestamp: new Date(Date.now() - 3600000).toISOString(), classification: 'Student' },
+  { id: 'v2', userEmail: 'visitor2@neu.edu.ph', userName: 'Maria Santos', department: 'College of Arts and Sciences', office: 'Dean\'s Office', reason: 'Submission of Documents', timestamp: new Date(Date.now() - 86400000).toISOString(), classification: 'Student' },
 ];
 
 class EduStore {

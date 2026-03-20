@@ -4,14 +4,33 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, LogOut, MapPin, ClipboardList, UserCircle } from 'lucide-react';
+import { CheckCircle2, LogOut, MapPin, UserCircle, School, Building2 } from 'lucide-react';
 import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 
-const DESTINATIONS = [
+const DEPARTMENTS = [
+  'College of Computer Studies',
+  'College of Arts and Sciences',
+  'College of Engineering',
+  'College of Business and Accountancy',
+  'College of Nursing',
+  'College of Education',
+  'College of Law',
+  'College of Music',
+  'College of Communication',
+  'College of Architecture',
+  'College of Medicine',
+  'College of Agriculture',
+  'College of Hospitality Management',
+  'Graduate School',
+  'Senior High School',
+  'Basic Education Department',
+];
+
+const OFFICES = [
   'Library',
   'Dean\'s Office'
 ];
@@ -34,7 +53,8 @@ export default function VisitorCheckIn() {
   const router = useRouter();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
-  const [destination, setDestination] = useState('');
+  const [department, setDepartment] = useState('');
+  const [office, setOffice] = useState('');
   const [classification, setClassification] = useState('');
   const [reason, setReason] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -45,7 +65,6 @@ export default function VisitorCheckIn() {
       router.push('/');
     } else {
       setUser(currentUser);
-      // Pre-set classification if user already has one, but allow override
       if (currentUser.classification) {
         setClassification(currentUser.classification);
       }
@@ -54,7 +73,7 @@ export default function VisitorCheckIn() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!destination || !reason || !classification) {
+    if (!department || !office || !reason || !classification) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -66,8 +85,9 @@ export default function VisitorCheckIn() {
     store.addVisit({
       userEmail: user.email,
       userName: user.name,
-      department: destination,
-      reason,
+      department: department,
+      office: office,
+      reason: reason,
       classification: classification
     });
 
@@ -96,7 +116,7 @@ export default function VisitorCheckIn() {
           </div>
           <h2 className="text-3xl font-bold mb-4 text-white">Check-in Confirmed</h2>
           <p className="text-white/60 mb-10 leading-relaxed">
-            Thank you for checking in, <span className="text-white font-medium">{user.name}</span>. Your visit to the <span className="text-white font-medium">{destination}</span> as <span className="text-white font-medium">{classification}</span> is now logged.
+            Thank you for checking in, <span className="text-white font-medium">{user.name}</span>. Your visit to the <span className="text-white font-medium">{office}</span> ({department}) as <span className="text-white font-medium">{classification}</span> is now logged.
           </p>
           <Button onClick={handleLogout} className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90">
             Sign Out
@@ -127,32 +147,32 @@ export default function VisitorCheckIn() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-3xl grid lg:grid-cols-5 gap-8">
+        <div className="w-full max-w-4xl grid lg:grid-cols-5 gap-8">
           <div className="lg:col-span-2 space-y-8 flex flex-col justify-center text-center lg:text-left">
             <div className="space-y-4">
               <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-white">Campus <br /><span className="text-primary">Check-in</span></h1>
               <p className="text-white/50 text-sm max-w-xs mx-auto lg:mx-0">
-                Please provide your destination, classification, and purpose to complete your check-in.
+                Specify your department, target office, and purpose to complete your check-in.
               </p>
             </div>
             
             <div className="hidden lg:block space-y-6">
               <div className="flex items-start gap-4">
                 <div className="p-2 bg-white/5 rounded-lg border border-white/10">
-                  <MapPin className="h-5 w-5 text-primary" />
+                  <School className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm text-white">Destination</h4>
-                  <p className="text-xs text-white/40">Select where you are heading.</p>
+                  <h4 className="font-medium text-sm text-white">Department</h4>
+                  <p className="text-xs text-white/40">Your college or academic unit.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
                 <div className="p-2 bg-white/5 rounded-lg border border-white/10">
-                  <UserCircle className="h-5 w-5 text-primary" />
+                  <Building2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-sm text-white">Classification</h4>
-                  <p className="text-xs text-white/40">Student or Staff member?</p>
+                  <h4 className="font-medium text-sm text-white">Office</h4>
+                  <p className="text-xs text-white/40">Where exactly are you going?</p>
                 </div>
               </div>
             </div>
@@ -164,14 +184,28 @@ export default function VisitorCheckIn() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="destination" className="text-white/70">Visit Destination</Label>
-                      <Select value={destination} onValueChange={setDestination} required>
+                      <Label htmlFor="department" className="text-white/70">College / Department</Label>
+                      <Select value={department} onValueChange={setDepartment} required>
                         <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white">
-                          <SelectValue placeholder="Where are you going?" />
+                          <SelectValue placeholder="Select your department" />
+                        </SelectTrigger>
+                        <SelectContent className="glass-card border-white/10 text-white max-h-[300px]">
+                          {DEPARTMENTS.map((dept) => (
+                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="office" className="text-white/70">Target Office</Label>
+                      <Select value={office} onValueChange={setOffice} required>
+                        <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white">
+                          <SelectValue placeholder="Library or Dean's Office?" />
                         </SelectTrigger>
                         <SelectContent className="glass-card border-white/10 text-white">
-                          {DESTINATIONS.map((dest) => (
-                            <SelectItem key={dest} value={dest}>{dest}</SelectItem>
+                          {OFFICES.map((off) => (
+                            <SelectItem key={off} value={off}>{off}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -181,7 +215,7 @@ export default function VisitorCheckIn() {
                       <Label htmlFor="classification" className="text-white/70">User Classification</Label>
                       <Select value={classification} onValueChange={setClassification} required>
                         <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white">
-                          <SelectValue placeholder="Are you student or staff?" />
+                          <SelectValue placeholder="Student or Staff?" />
                         </SelectTrigger>
                         <SelectContent className="glass-card border-white/10 text-white">
                           {CLASSIFICATIONS.map((cls) => (
