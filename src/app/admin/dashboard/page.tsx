@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell
 } from 'recharts';
@@ -106,10 +107,15 @@ export default function AdminDashboard() {
       <aside className="w-64 bg-white border-r hidden lg:flex flex-col">
         <div className="p-6 border-b">
           <div className="flex items-center gap-2">
-            <div className="bg-primary p-1.5 rounded-lg">
-              <Users className="h-5 w-5 text-white" />
+            <div className="relative w-8 h-8">
+              <Image 
+                src="https://upload.wikimedia.org/wikipedia/en/c/c6/New_Era_University.svg" 
+                alt="NEU Logo"
+                fill
+                className="object-contain"
+              />
             </div>
-            <span className="font-bold text-xl text-primary font-headline">EduConnect Hub</span>
+            <span className="font-bold text-lg text-primary font-headline">NEU EduConnect</span>
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-2">
@@ -137,7 +143,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <header className="h-16 bg-white border-b px-8 flex items-center justify-between sticky top-0 z-10">
-          <h2 className="text-xl font-bold font-headline">Real-time Dashboard</h2>
+          <h2 className="text-xl font-bold font-headline text-primary">New Era University Analytics</h2>
           <div className="flex items-center gap-4">
             <Tabs value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
               <TabsList>

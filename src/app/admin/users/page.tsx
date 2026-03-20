@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { 
   Users, Search, UserCircle, LayoutDashboard, FileText, LogOut, 
   MoreHorizontal, Ban, ShieldCheck, Mail
@@ -66,10 +67,15 @@ export default function UserManagement() {
       <aside className="w-64 bg-white border-r hidden lg:flex flex-col">
         <div className="p-6 border-b">
           <div className="flex items-center gap-2">
-            <div className="bg-primary p-1.5 rounded-lg">
-              <Users className="h-5 w-5 text-white" />
+            <div className="relative w-8 h-8">
+              <Image 
+                src="https://upload.wikimedia.org/wikipedia/en/c/c6/New_Era_University.svg" 
+                alt="NEU Logo"
+                fill
+                className="object-contain"
+              />
             </div>
-            <span className="font-bold text-xl text-primary font-headline">EduConnect Hub</span>
+            <span className="font-bold text-lg text-primary font-headline">NEU EduConnect</span>
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-2">
@@ -96,7 +102,7 @@ export default function UserManagement() {
 
       <main className="flex-1 overflow-auto">
         <header className="h-16 bg-white border-b px-8 flex items-center justify-between sticky top-0 z-10">
-          <h2 className="text-xl font-bold font-headline">User Directory</h2>
+          <h2 className="text-xl font-bold font-headline text-primary">Institutional Directory</h2>
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
@@ -111,8 +117,8 @@ export default function UserManagement() {
         <div className="p-8">
           <Card className="border-none shadow-sm overflow-hidden">
             <CardHeader className="bg-white border-b">
-              <CardTitle className="text-lg">Registered Users</CardTitle>
-              <CardDescription>Manage campus visitor profiles and access permissions.</CardDescription>
+              <CardTitle className="text-lg">Registered Community Members</CardTitle>
+              <CardDescription>Manage NEU profiles and campus access permissions.</CardDescription>
             </CardHeader>
             <Table>
               <TableHeader className="bg-muted/30">

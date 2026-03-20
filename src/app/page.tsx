@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { GraduationCap, LogIn, ShieldAlert } from 'lucide-react';
+import { LogIn, ShieldAlert } from 'lucide-react';
 import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 
@@ -57,19 +58,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <div className="mb-8 text-center">
-        <div className="flex items-center justify-center mb-4">
-          <div className="bg-primary p-3 rounded-2xl">
-            <GraduationCap className="h-8 w-8 text-white" />
-          </div>
+      <div className="mb-8 text-center flex flex-col items-center">
+        <div className="mb-4 relative w-24 h-24">
+          <Image 
+            src="https://upload.wikimedia.org/wikipedia/en/c/c6/New_Era_University.svg" 
+            alt="New Era University Logo"
+            fill
+            className="object-contain"
+          />
         </div>
-        <h1 className="text-3xl font-bold font-headline text-primary">EduConnect Hub</h1>
+        <h1 className="text-3xl font-bold font-headline text-primary">NEU EduConnect Hub</h1>
         <p className="text-muted-foreground">Empowering Campus Connectivity</p>
       </div>
 
       <Card className="w-full max-w-md shadow-xl border-none">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-headline">Welcome back</CardTitle>
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-headline">New Era University</CardTitle>
           <CardDescription>
             {showPassword 
               ? 'Administrator verification required' 

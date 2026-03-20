@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GraduationCap, CheckCircle2, LogOut } from 'lucide-react';
+import { CheckCircle2, LogOut } from 'lucide-react';
 import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 
@@ -95,7 +96,7 @@ export default function VisitorCheckIn() {
           </div>
           <h2 className="text-2xl font-bold text-primary mb-2">Check-in Confirmed</h2>
           <p className="text-muted-foreground mb-8">
-            Thank you for checking in, {user.name}. Your visit is now logged in the hub.
+            Thank you for checking in, {user.name}. Your visit is now logged in the Hub.
           </p>
           <Button onClick={handleLogout} className="w-full h-11 bg-primary">
             Sign Out
@@ -109,8 +110,15 @@ export default function VisitorCheckIn() {
     <div className="min-h-screen flex flex-col p-4 md:p-8 bg-background">
       <header className="flex justify-between items-center max-w-2xl mx-auto w-full mb-12">
         <div className="flex items-center gap-2">
-          <GraduationCap className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg text-primary">EduConnect</span>
+          <div className="relative w-8 h-8">
+            <Image 
+              src="https://upload.wikimedia.org/wikipedia/en/c/c6/New_Era_University.svg" 
+              alt="NEU Logo"
+              fill
+              className="object-contain"
+            />
+          </div>
+          <span className="font-bold text-lg text-primary">New Era University</span>
         </div>
         <Button variant="ghost" size="sm" onClick={handleLogout}>
           <LogOut className="h-4 w-4 mr-2" />

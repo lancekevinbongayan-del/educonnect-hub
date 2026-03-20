@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'EduConnect Hub',
-  description: 'Campus Visitor Management and Analytics',
+  title: 'NEU EduConnect Hub',
+  description: 'New Era University - Campus Visitor Management and Analytics',
 };
 
 export default function RootLayout({
