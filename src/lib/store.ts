@@ -8,7 +8,7 @@ export interface User {
   name: string;
   role: UserRole;
   isBlocked: boolean;
-  classification: 'Student' | 'Faculty' | 'Staff' | 'Guest';
+  classification: 'Student' | 'Staff' | 'Faculty' | 'Guest';
 }
 
 export interface Visit {
@@ -29,8 +29,8 @@ const INITIAL_USERS: User[] = [
 ];
 
 const INITIAL_VISITS: Visit[] = [
-  { id: 'v1', userEmail: 'visitor1@neu.edu.ph', userName: 'Juan Dela Cruz', department: 'College of Computer Studies', reason: 'Consultation', timestamp: new Date(Date.now() - 3600000).toISOString(), classification: 'Student' },
-  { id: 'v2', userEmail: 'visitor2@neu.edu.ph', userName: 'Maria Santos', department: 'College of Arts and Sciences', reason: 'Library Use', timestamp: new Date(Date.now() - 86400000).toISOString(), classification: 'Student' },
+  { id: 'v1', userEmail: 'visitor1@neu.edu.ph', userName: 'Juan Dela Cruz', department: 'Library', reason: 'Research', timestamp: new Date(Date.now() - 3600000).toISOString(), classification: 'Student' },
+  { id: 'v2', userEmail: 'visitor2@neu.edu.ph', userName: 'Maria Santos', department: 'Dean\'s Office', reason: 'Submission of Documents', timestamp: new Date(Date.now() - 86400000).toISOString(), classification: 'Student' },
 ];
 
 class EduStore {
