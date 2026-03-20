@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, Menu } from 'lucide-react';
+import { LogIn, Menu, ShieldCheck, User, ArrowLeft } from 'lucide-react';
 import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,8 +16,8 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<'initial' | 'role-selection' | 'admin-password'>('initial');
 
   const handleInitialLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,19 +31,23 @@ export default function LoginPage() {
     }
 
     if (email === 'jcesperanza@neu.edu.ph') {
-      setShowPassword(true);
+      setView('role-selection');
     } else {
-      setLoading(true);
-      setTimeout(() => {
-        const user = store.login(email, 'visitor');
-        if (user.isBlocked) {
-          toast({ variant: 'destructive', title: 'Access Denied', description: 'Your account has been blocked.' });
-          setLoading(false);
-          return;
-        }
-        router.push('/visitor/check-in');
-      }, 800);
+      handleVisitorAccess();
     }
+  };
+
+  const handleVisitorAccess = () => {
+    setLoading(true);
+    setTimeout(() => {
+      const user = store.login(email, 'visitor');
+      if (user.isBlocked) {
+        toast({ variant: 'destructive', title: 'Access Denied', description: 'Your account has been blocked.' });
+        setLoading(false);
+        return;
+      }
+      router.push('/visitor/check-in');
+    }, 800);
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -104,16 +108,18 @@ export default function LoginPage() {
             <CardContent className="p-8 space-y-6">
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold tracking-tight">
-                  {showPassword ? 'Admin Verification' : 'Welcome Back'}
+                  {view === 'initial' && 'Welcome Back'}
+                  {view === 'role-selection' && 'Select Role'}
+                  {view === 'admin-password' && 'Admin Verification'}
                 </h2>
                 <p className="text-sm text-white/50">
-                  {showPassword 
-                    ? 'Please enter your administrator credentials.' 
-                    : 'Sign in with your @neu.edu.ph institutional account.'}
+                  {view === 'initial' && 'Sign in with your @neu.edu.ph institutional account.'}
+                  {view === 'role-selection' && 'Choose how you want to access the Hub today.'}
+                  {view === 'admin-password' && 'Please enter your administrator credentials.'}
                 </p>
               </div>
 
-              {!showPassword ? (
+              {view === 'initial' && (
                 <form onSubmit={handleInitialLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-white/70">Institutional Email</Label>
@@ -132,7 +138,55 @@ export default function LoginPage() {
                     {!loading && <LogIn className="ml-2 h-4 w-4" />}
                   </Button>
                 </form>
-              ) : (
+              )}
+
+              {view === 'role-selection' && (
+                <div className="space-y-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-16 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 hover:border-primary/50 group"
+                    onClick={() => setView('admin-password')}
+                  >
+                    <div className="flex items-center gap-4 w-full px-2">
+                      <div className="p-2 rounded-xl bg-primary/20 text-primary group-hover:scale-110 transition-transform">
+                        <ShieldCheck className="h-6 w-6" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold text-sm">Enter as Administrator</p>
+                        <p className="text-[10px] text-white/40 font-normal">Access dashboard and management tools</p>
+                      </div>
+                    </div>
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-16 rounded-2xl border-white/10 bg-white/5 hover:bg-white/10 hover:border-primary/50 group"
+                    onClick={handleVisitorAccess}
+                    disabled={loading}
+                  >
+                    <div className="flex items-center gap-4 w-full px-2">
+                      <div className="p-2 rounded-xl bg-white/5 text-white/60 group-hover:scale-110 transition-transform">
+                        <User className="h-6 w-6" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold text-sm">{loading ? 'Logging in...' : 'Enter as Visitor'}</p>
+                        <p className="text-[10px] text-white/40 font-normal">Standard campus check-in process</p>
+                      </div>
+                    </div>
+                  </Button>
+
+                  <Button 
+                    variant="ghost" 
+                    className="w-full mt-2 text-white/40 hover:text-white"
+                    onClick={() => setView('initial')}
+                  >
+                    <ArrowLeft className="h-3 w-3 mr-2" />
+                    Back to email entry
+                  </Button>
+                </div>
+              )}
+
+              {view === 'admin-password' && (
                 <form onSubmit={handleAdminLogin} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-white/70">Secure Password</Label>
@@ -147,7 +201,7 @@ export default function LoginPage() {
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <Button variant="secondary" className="flex-1 h-12 rounded-xl" onClick={() => setShowPassword(false)}>
+                    <Button variant="secondary" className="flex-1 h-12 rounded-xl" onClick={() => setView('role-selection')}>
                       Back
                     </Button>
                     <Button type="submit" className="flex-1 h-12 rounded-xl font-bold">
