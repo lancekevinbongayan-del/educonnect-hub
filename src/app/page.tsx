@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, ArrowRight, Menu } from 'lucide-react';
+import { LogIn, Menu } from 'lucide-react';
 import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 
@@ -96,14 +96,6 @@ export default function LoginPage() {
           <p className="text-lg text-white/60 max-w-lg mx-auto lg:mx-0 leading-relaxed">
             Welcome to the New Era University digital gateway. Streamline your check-in process and access institutional analytics with our integrated Hub.
           </p>
-          <div className="flex items-center justify-center lg:justify-start gap-4">
-            {!showPassword && (
-              <Button size="lg" className="rounded-full px-8 h-14 text-base font-bold shadow-lg shadow-primary/25" onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}>
-                Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            )}
-          </div>
         </div>
 
         {/* Login Section */}
