@@ -7,9 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, LogOut, MapPin, UserCircle, School, Building2 } from 'lucide-react';
+import { 
+  CheckCircle2, LogOut, MapPin, UserCircle, School, Building2, 
+  Library, GraduationCap, Users, BookOpen, ChevronRight, Menu
+} from 'lucide-react';
 import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 const DEPARTMENTS = [
   'College of Computer Studies',
@@ -28,16 +32,6 @@ const DEPARTMENTS = [
   'Graduate School',
   'Senior High School',
   'Basic Education Department',
-];
-
-const OFFICES = [
-  'Library',
-  'Dean\'s Office'
-];
-
-const CLASSIFICATIONS = [
-  'Student',
-  'Staff'
 ];
 
 const REASONS = [
@@ -128,9 +122,9 @@ export default function VisitorCheckIn() {
 
   return (
     <div className="min-h-screen gradient-bg flex flex-col">
-      <header className="px-6 py-6 lg:px-12 flex justify-between items-center z-10">
+      <header className="px-6 py-6 lg:px-12 flex justify-between items-center z-20">
         <div className="flex items-center gap-3">
-          <div className="relative w-8 h-8 bg-white rounded-full p-1 shadow-lg">
+          <div className="relative w-10 h-10 bg-white rounded-full p-1.5 shadow-lg">
             <Image 
               src="https://upload.wikimedia.org/wikipedia/en/c/c6/New_Era_University.svg" 
               alt="NEU Logo"
@@ -138,127 +132,160 @@ export default function VisitorCheckIn() {
               className="object-contain p-1"
             />
           </div>
-          <span className="font-bold tracking-tight text-white">NEU HUB</span>
+          <span className="font-bold tracking-tight text-white text-xl">NEU HUB</span>
         </div>
-        <Button variant="ghost" className="text-white/60 hover:text-white" onClick={handleLogout}>
+        <Button variant="ghost" className="text-white/60 hover:text-white bg-white/5 rounded-xl" onClick={handleLogout}>
           <LogOut className="h-4 w-4 mr-2" />
           Logout
         </Button>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-4xl grid lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-2 space-y-8 flex flex-col justify-center text-center lg:text-left">
+      <main className="flex-1 flex flex-col items-center justify-start py-12 px-6 lg:px-12 overflow-y-auto">
+        <div className="w-full max-w-2xl space-y-8">
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-white tracking-tighter">
+              Institutional <span className="text-primary">Check-in</span>
+            </h1>
+            <p className="text-white/40 text-sm">
+              Please finalize your visit details below.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-8 pb-20">
+            {/* Target Office Selection - Icon Grid */}
             <div className="space-y-4">
-              <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-white">Campus <br /><span className="text-primary">Check-in</span></h1>
-              <p className="text-white/50 text-sm max-w-xs mx-auto lg:mx-0">
-                Specify your department, target office, and purpose to complete your check-in.
-              </p>
-            </div>
-            
-            <div className="hidden lg:block space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-white/5 rounded-lg border border-white/10">
-                  <School className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-white">Department</h4>
-                  <p className="text-xs text-white/40">Your college or academic unit.</p>
-                </div>
+              <Label className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
+                <Building2 className="h-3 w-3" />
+                Target Office
+              </Label>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { id: 'Library', icon: Library, label: 'Library' },
+                  { id: "Dean's Office", icon: GraduationCap, label: "Dean's Office" }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setOffice(item.id)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-6 rounded-2xl border-2 transition-all group relative overflow-hidden",
+                      office === item.id 
+                        ? "bg-primary/20 border-primary text-white shadow-lg shadow-primary/10" 
+                        : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-white/20"
+                    )}
+                  >
+                    <item.icon className={cn(
+                      "h-10 w-10 mb-3 transition-transform",
+                      office === item.id ? "scale-110" : "group-hover:scale-105"
+                    )} />
+                    <span className="font-bold text-sm tracking-tight">{item.label}</span>
+                    {office === item.id && (
+                      <div className="absolute top-2 right-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-white/5 rounded-lg border border-white/10">
-                  <Building2 className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-white">Office</h4>
-                  <p className="text-xs text-white/40">Where exactly are you going?</p>
-                </div>
+            </div>
+
+            {/* Classification Selection - Icon Grid */}
+            <div className="space-y-4">
+              <Label className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
+                <Users className="h-3 w-3" />
+                Classification
+              </Label>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { id: 'Student', icon: UserCircle, label: 'Student' },
+                  { id: 'Staff', icon: Building2, label: 'Staff' }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setClassification(item.id)}
+                    className={cn(
+                      "flex items-center gap-4 p-5 rounded-2xl border-2 transition-all group relative",
+                      classification === item.id 
+                        ? "bg-primary/20 border-primary text-white shadow-lg shadow-primary/10" 
+                        : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:border-white/20"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-2 rounded-xl bg-white/5",
+                      classification === item.id && "bg-primary/20"
+                    )}>
+                      <item.icon className="h-6 w-6" />
+                    </div>
+                    <span className="font-bold text-sm tracking-tight">{item.label}</span>
+                    {classification === item.id && (
+                      <div className="ml-auto">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                      </div>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div className="lg:col-span-3">
-            <Card className="glass-card border-none overflow-hidden">
-              <CardContent className="p-8 lg:p-10">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="department" className="text-white/70">College / Department</Label>
-                      <Select value={department} onValueChange={setDepartment} required>
-                        <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white">
-                          <SelectValue placeholder="Select your department" />
-                        </SelectTrigger>
-                        <SelectContent className="glass-card border-white/10 text-white max-h-[300px]">
-                          {DEPARTMENTS.map((dept) => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+            {/* Dropdown Selections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
+                  <School className="h-3 w-3" />
+                  College / Department
+                </Label>
+                <Select value={department} onValueChange={setDepartment}>
+                  <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl text-white focus:ring-primary focus:border-primary px-5">
+                    <div className="flex items-center gap-3">
+                      <Menu className="h-4 w-4 text-primary/60" />
+                      <SelectValue placeholder="Select unit" />
                     </div>
+                  </SelectTrigger>
+                  <SelectContent className="glass-card border-white/10 text-white max-h-[300px]">
+                    {DEPARTMENTS.map((dept) => (
+                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="office" className="text-white/70">Target Office</Label>
-                      <Select value={office} onValueChange={setOffice} required>
-                        <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white">
-                          <SelectValue placeholder="Library or Dean's Office?" />
-                        </SelectTrigger>
-                        <SelectContent className="glass-card border-white/10 text-white">
-                          {OFFICES.map((off) => (
-                            <SelectItem key={off} value={off}>{off}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              <div className="space-y-3">
+                <Label className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
+                  <BookOpen className="h-3 w-3" />
+                  Purpose of Visit
+                </Label>
+                <Select value={reason} onValueChange={setReason}>
+                  <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl text-white focus:ring-primary focus:border-primary px-5">
+                    <div className="flex items-center gap-3">
+                      <ChevronRight className="h-4 w-4 text-primary/60" />
+                      <SelectValue placeholder="Select purpose" />
                     </div>
+                  </SelectTrigger>
+                  <SelectContent className="glass-card border-white/10 text-white">
+                    {REASONS.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="classification" className="text-white/70">User Classification</Label>
-                      <Select value={classification} onValueChange={setClassification} required>
-                        <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white">
-                          <SelectValue placeholder="Student or Staff?" />
-                        </SelectTrigger>
-                        <SelectContent className="glass-card border-white/10 text-white">
-                          {CLASSIFICATIONS.map((cls) => (
-                            <SelectItem key={cls} value={cls}>{cls}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="reason" className="text-white/70">Reason for Visit</Label>
-                      <Select value={reason} onValueChange={setReason} required>
-                        <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white">
-                          <SelectValue placeholder="What is your purpose?" />
-                        </SelectTrigger>
-                        <SelectContent className="glass-card border-white/10 text-white">
-                          {REASONS.map((reason) => (
-                            <SelectItem key={reason} value={reason}>{reason}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <Button type="submit" className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white">
-                      Complete Check-in
-                    </Button>
-                  </div>
-
-                  <div className="text-center pt-2">
-                    <p className="text-[10px] text-white/30 font-bold uppercase tracking-widest">
-                      Logged in as {user.email}
-                    </p>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+            {/* Submit Section */}
+            <div className="pt-6 space-y-4">
+              <Button type="submit" className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white transition-all hover:scale-[1.01] active:scale-[0.99]">
+                Complete Check-in
+              </Button>
+              <div className="flex items-center justify-center gap-2 text-[10px] text-white/30 font-bold uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Logged in as {user.email}
+              </div>
+            </div>
+          </form>
         </div>
       </main>
       
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[160px] pointer-events-none -z-10" />
     </div>
   );
 }
