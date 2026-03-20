@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { 
   Users, Calendar, Clock, Filter, Search, MoreVertical, 
-  LayoutDashboard, UserCircle, FileText, LogOut, ChevronRight, Activity
+  LayoutDashboard, UserCircle, FileText, LogOut, ChevronRight, Activity, X
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,14 @@ const REASONS = [
   'Submission of Documents',
   'Exam/Assessment',
   'Facility Usage',
+];
+
+const CLASSIFICATIONS = [
+  'Student',
+  'Faculty',
+  'Staff',
+  'Guest',
+  'Employee' // Custom filter for Faculty + Staff
 ];
 
 export default function AdminDashboard() {
@@ -101,6 +109,12 @@ export default function AdminDashboard() {
     router.push('/');
   };
 
+  const clearFilters = () => {
+    setFilterDept('All');
+    setFilterReason('All');
+    setFilterClass('All');
+  };
+
   return (
     <div className="min-h-screen flex gradient-bg">
       {/* Sidebar */}
@@ -143,19 +157,86 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <header className="h-20 glass-card border-none border-b border-white/5 px-8 flex items-center justify-between sticky top-0 z-10">
-          <h2 className="text-xl font-bold tracking-tight text-white/90">Institutional Analytics</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-bold tracking-tight text-white/90">Institutional Analytics</h2>
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 ml-2">
+              Live
+            </Badge>
+          </div>
           <div className="flex items-center gap-4">
             <Tabs value={timeRange} onValueChange={(v: any) => setTimeRange(v)} className="bg-white/5 rounded-xl p-1 border border-white/10">
               <TabsList className="bg-transparent border-none">
-                <TabsTrigger value="Day" className="rounded-lg data-[state=active]:bg-primary">Day</TabsTrigger>
-                <TabsTrigger value="Week" className="rounded-lg data-[state=active]:bg-primary">Week</TabsTrigger>
-                <TabsTrigger value="Month" className="rounded-lg data-[state=active]:bg-primary">Month</TabsTrigger>
+                <TabsTrigger value="Day" className="rounded-lg data-[state=active]:bg-primary h-8 px-4">Day</TabsTrigger>
+                <TabsTrigger value="Week" className="rounded-lg data-[state=active]:bg-primary h-8 px-4">Week</TabsTrigger>
+                <TabsTrigger value="Month" className="rounded-lg data-[state=active]:bg-primary h-8 px-4">Month</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
         </header>
 
         <div className="p-8 space-y-8">
+          {/* Filter Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 glass-card p-6 rounded-3xl border-none shadow-xl">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-white/40">College / Department</Label>
+              <Select value={filterDept} onValueChange={setFilterDept}>
+                <SelectTrigger className="bg-white/5 border-white/10 h-11 rounded-xl focus:ring-primary">
+                  <SelectValue placeholder="All Units" />
+                </SelectTrigger>
+                <SelectContent className="glass-card border-white/10">
+                  <SelectItem value="All">All Units</SelectItem>
+                  {DEPARTMENTS.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Type of Visit</Label>
+              <Select value={filterReason} onValueChange={setFilterReason}>
+                <SelectTrigger className="bg-white/5 border-white/10 h-11 rounded-xl focus:ring-primary">
+                  <SelectValue placeholder="All Reasons" />
+                </SelectTrigger>
+                <SelectContent className="glass-card border-white/10">
+                  <SelectItem value="All">All Reasons</SelectItem>
+                  {REASONS.map(reason => (
+                    <SelectItem key={reason} value={reason}>{reason}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Visitor Classification</Label>
+              <Select value={filterClass} onValueChange={setFilterClass}>
+                <SelectTrigger className="bg-white/5 border-white/10 h-11 rounded-xl focus:ring-primary">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent className="glass-card border-white/10">
+                  <SelectItem value="All">All Types</SelectItem>
+                  {CLASSIFICATIONS.map(cls => (
+                    <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end">
+              {(filterDept !== 'All' || filterReason !== 'All' || filterClass !== 'All') ? (
+                <Button variant="ghost" className="w-full h-11 rounded-xl text-white/40 hover:text-white hover:bg-white/5" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-2" />
+                  Clear Filters
+                </Button>
+              ) : (
+                <div className="w-full h-11 flex items-center justify-center text-white/20 text-xs font-medium border border-dashed border-white/10 rounded-xl">
+                  <Filter className="h-3 w-3 mr-2" />
+                  Apply filters to narrow results
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="glass-card border-none shadow-xl overflow-hidden relative group">
@@ -236,7 +317,7 @@ export default function AdminDashboard() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle className="text-lg">Recent Logs</CardTitle>
-                    <CardDescription className="text-white/40">Live check-in stream</CardDescription>
+                    <CardDescription className="text-white/40">Live activity stream</CardDescription>
                   </div>
                   <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-white/5">View Logs</Button>
                 </CardHeader>
@@ -254,14 +335,19 @@ export default function AdminDashboard() {
                               {format(new Date(visit.timestamp), 'HH:mm')}
                             </span>
                           </div>
-                          <p className="text-xs text-white/40 truncate">{visit.reason} • {visit.department}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-[9px] h-4 font-normal text-white/30 border-white/10 px-1">
+                              {visit.classification}
+                            </Badge>
+                            <p className="text-[10px] text-white/40 truncate">{visit.reason} • {visit.department}</p>
+                          </div>
                         </div>
                       </div>
                     ))}
                     {filteredVisits.length === 0 && (
                       <div className="text-center py-20 text-white/20">
                         <Activity className="h-12 w-12 mx-auto mb-4 opacity-10" />
-                        <p className="text-sm">No activity detected for this filter</p>
+                        <p className="text-sm">No activity detected for current filters</p>
                       </div>
                     )}
                   </div>
