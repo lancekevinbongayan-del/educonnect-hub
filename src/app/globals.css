@@ -4,26 +4,48 @@
 
 @layer base {
   :root {
-    --background: 210 24% 94%;
-    --foreground: 219 69% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 219 69% 15%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 219 69% 15%;
-    --primary: 219 69% 39%;
-    --primary-foreground: 210 24% 98%;
-    --secondary: 190 85% 55%;
-    --secondary-foreground: 219 69% 15%;
-    --muted: 210 24% 85%;
-    --muted-foreground: 219 30% 40%;
-    --accent: 190 85% 55%;
-    --accent-foreground: 219 69% 15%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 219 30% 88%;
-    --input: 219 30% 88%;
-    --ring: 219 69% 39%;
-    --radius: 0.75rem;
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 4%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 16%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 263 70% 50%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 16%;
+    --input: 240 4% 16%;
+    --ring: 263 70% 50%;
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 263 70% 50%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 263 70% 50%;
   }
 }
 
@@ -34,4 +56,18 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.glass-card {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-2xl;
+}
+
+.gradient-bg {
+  background: radial-gradient(circle at top left, hsla(263, 70%, 50%, 0.15), transparent),
+              radial-gradient(circle at bottom right, hsla(210, 100%, 50%, 0.1), transparent),
+              hsl(240, 10%, 4%);
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60;
 }

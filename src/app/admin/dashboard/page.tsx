@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { 
   Users, Calendar, Clock, Filter, Search, MoreVertical, 
-  LayoutDashboard, UserCircle, FileText, LogOut, ChevronRight
+  LayoutDashboard, UserCircle, FileText, LogOut, ChevronRight, Activity
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,54 +102,54 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex gradient-bg">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r hidden lg:flex flex-col">
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8">
+      <aside className="w-72 glass-card border-none border-r border-white/5 hidden lg:flex flex-col">
+        <div className="p-8 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="relative w-8 h-8 bg-white rounded-full p-1 shadow-xl">
               <Image 
                 src="https://upload.wikimedia.org/wikipedia/en/c/c6/New_Era_University.svg" 
                 alt="NEU Logo"
                 fill
-                className="object-contain"
+                className="object-contain p-0.5"
               />
             </div>
-            <span className="font-bold text-lg text-primary font-headline">NEU EduConnect</span>
+            <span className="font-bold text-xl tracking-tight text-gradient">NEU HUB</span>
           </div>
         </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <Button variant="secondary" className="w-full justify-start gap-3 bg-primary/10 text-primary">
-            <LayoutDashboard className="h-4 w-4" />
+        <nav className="flex-1 p-6 space-y-2">
+          <Button variant="secondary" className="w-full justify-start gap-3 bg-primary text-white hover:bg-primary/90 rounded-xl h-12 shadow-lg shadow-primary/20">
+            <LayoutDashboard className="h-5 w-5" />
             Dashboard
           </Button>
-          <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => router.push('/admin/users')}>
-            <UserCircle className="h-4 w-4" />
-            User Management
+          <Button variant="ghost" className="w-full justify-start gap-3 text-white/60 hover:text-white hover:bg-white/5 h-12 rounded-xl" onClick={() => router.push('/admin/users')}>
+            <UserCircle className="h-5 w-5" />
+            Users
           </Button>
-          <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => router.push('/admin/reports')}>
-            <FileText className="h-4 w-4" />
-            Dean's Reports
+          <Button variant="ghost" className="w-full justify-start gap-3 text-white/60 hover:text-white hover:bg-white/5 h-12 rounded-xl" onClick={() => router.push('/admin/reports')}>
+            <FileText className="h-5 w-5" />
+            Reports
           </Button>
         </nav>
-        <div className="p-4 border-t">
-          <Button variant="ghost" className="w-full justify-start gap-3 text-destructive" onClick={handleLogout}>
-            <LogOut className="h-4 w-4" />
-            Logout
+        <div className="p-6 border-t border-white/5">
+          <Button variant="ghost" className="w-full justify-start gap-3 text-destructive/80 hover:text-destructive hover:bg-destructive/10 h-12 rounded-xl" onClick={handleLogout}>
+            <LogOut className="h-5 w-5" />
+            Sign Out
           </Button>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <header className="h-16 bg-white border-b px-8 flex items-center justify-between sticky top-0 z-10">
-          <h2 className="text-xl font-bold font-headline text-primary">New Era University Analytics</h2>
+        <header className="h-20 glass-card border-none border-b border-white/5 px-8 flex items-center justify-between sticky top-0 z-10">
+          <h2 className="text-xl font-bold tracking-tight text-white/90">Institutional Analytics</h2>
           <div className="flex items-center gap-4">
-            <Tabs value={timeRange} onValueChange={(v: any) => setTimeRange(v)}>
-              <TabsList>
-                <TabsTrigger value="Day">Day</TabsTrigger>
-                <TabsTrigger value="Week">Week</TabsTrigger>
-                <TabsTrigger value="Month">Month</TabsTrigger>
+            <Tabs value={timeRange} onValueChange={(v: any) => setTimeRange(v)} className="bg-white/5 rounded-xl p-1 border border-white/10">
+              <TabsList className="bg-transparent border-none">
+                <TabsTrigger value="Day" className="rounded-lg data-[state=active]:bg-primary">Day</TabsTrigger>
+                <TabsTrigger value="Week" className="rounded-lg data-[state=active]:bg-primary">Week</TabsTrigger>
+                <TabsTrigger value="Month" className="rounded-lg data-[state=active]:bg-primary">Month</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -158,164 +158,116 @@ export default function AdminDashboard() {
         <div className="p-8 space-y-8">
           {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="border-none shadow-sm bg-primary text-white">
+            <Card className="glass-card border-none shadow-xl overflow-hidden relative group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-primary/40 transition-colors" />
               <CardHeader className="pb-2">
-                <CardDescription className="text-white/70">Total Visitors ({timeRange})</CardDescription>
-                <CardTitle className="text-3xl">{filteredVisits.length}</CardTitle>
+                <CardDescription className="text-white/40 uppercase tracking-widest text-[10px] font-bold">Total Activity</CardDescription>
+                <CardTitle className="text-4xl font-bold">{filteredVisits.length}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center text-xs text-white/50">
-                  <Clock className="h-3 w-3 mr-1" />
-                  Real-time update active
+                <div className="flex items-center text-xs text-primary font-medium">
+                  <Activity className="h-3 w-3 mr-1.5" />
+                  Real-time synchronization
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-none shadow-sm">
+            
+            <Card className="glass-card border-none shadow-xl">
               <CardHeader className="pb-2">
-                <CardDescription>Unique Users</CardDescription>
-                <CardTitle className="text-3xl">
+                <CardDescription className="text-white/40 uppercase tracking-widest text-[10px] font-bold">Unique Visitors</CardDescription>
+                <CardTitle className="text-4xl font-bold">
                   {new Set(filteredVisits.map(v => v.userEmail)).size}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xs text-muted-foreground flex items-center">
-                  <Users className="h-3 w-3 mr-1" />
-                  Across all categories
+                <div className="text-xs text-white/40 flex items-center">
+                  <Users className="h-3 w-3 mr-1.5" />
+                  Across institutional units
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-none shadow-sm">
+
+            <Card className="glass-card border-none shadow-xl">
               <CardHeader className="pb-2">
-                <CardDescription>Peak Department</CardDescription>
-                <CardTitle className="text-xl truncate">
+                <CardDescription className="text-white/40 uppercase tracking-widest text-[10px] font-bold">Top Unit</CardDescription>
+                <CardTitle className="text-xl font-bold truncate">
                   {chartData.sort((a, b) => b.value - a.value)[0]?.name || 'N/A'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-xs text-muted-foreground">
-                  Highest traffic volume detected
+                <div className="text-xs text-white/40">
+                  Detected highest volume concentration
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Filters */}
-          <Card className="border-none shadow-sm">
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs uppercase text-muted-foreground">College / Department</Label>
-                  <Select value={filterDept} onValueChange={setFilterDept}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Colleges" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">All Colleges</SelectItem>
-                      {DEPARTMENTS.map((dept) => (
-                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs uppercase text-muted-foreground">Reason for Visit</Label>
-                  <Select value={filterReason} onValueChange={setFilterReason}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Reasons" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">All Reasons</SelectItem>
-                      {REASONS.map((reason) => (
-                        <SelectItem key={reason} value={reason}>{reason}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs uppercase text-muted-foreground">Classification</Label>
-                  <Select value={filterClass} onValueChange={setFilterClass}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Classifications" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="All">All Classifications</SelectItem>
-                      <SelectItem value="Employee">Employee (Teacher/Staff)</SelectItem>
-                      <SelectItem value="Student">Student Only</SelectItem>
-                      <SelectItem value="Faculty">Faculty Only</SelectItem>
-                      <SelectItem value="Staff">Staff Only</SelectItem>
-                      <SelectItem value="Guest">Guest Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Detailed Distribution */}
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
+            <div className="xl:col-span-3 space-y-6">
+              <Card className="glass-card border-none shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-lg">Campus Volume</CardTitle>
+                  <CardDescription className="text-white/40">Distribution across colleges and units</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" width={150} tick={{fill: 'rgba(255,255,255,0.4)', fontSize: 10}} axisLine={false} tickLine={false} />
+                      <RechartsTooltip 
+                        cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                        contentStyle={{backgroundColor: '#0a0a0c', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)'}}
+                      />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index % 2 === 0 ? 'hsl(263, 70%, 50%)' : 'hsl(210, 100%, 66%)'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            {/* Chart */}
-            <Card className="border-none shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg">Visitor Distribution</CardTitle>
-                <CardDescription>Breakdown by Department</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" hide />
-                    <YAxis axisLine={false} tickLine={false} />
-                    <RechartsTooltip 
-                      cursor={{fill: '#f5f5f5'}}
-                      contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
-                    />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#1F50A8' : '#2ECEED'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Recent Activity */}
-            <Card className="border-none shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Recent Activity</CardTitle>
-                  <CardDescription>Latest visitor check-ins</CardDescription>
-                </div>
-                <Button variant="outline" size="sm">View All</Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {filteredVisits.slice(0, 5).map((visit) => (
-                    <div key={visit.id} className="flex items-start gap-4">
-                      <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                        <UserCircle className="h-6 w-6 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-0.5">
-                          <p className="font-medium truncate">{visit.userName}</p>
-                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                            {format(new Date(visit.timestamp), 'HH:mm')}
-                          </span>
+            <div className="xl:col-span-2 space-y-6">
+              <Card className="glass-card border-none shadow-xl">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Recent Logs</CardTitle>
+                    <CardDescription className="text-white/40">Live check-in stream</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-white/5">View Logs</Button>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {filteredVisits.slice(0, 6).map((visit) => (
+                      <div key={visit.id} className="flex items-start gap-4 p-3 rounded-2xl hover:bg-white/5 transition-colors group">
+                        <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10 group-hover:border-primary/50 transition-colors">
+                          <UserCircle className="h-6 w-6 text-white/20" />
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">{visit.reason} • {visit.department}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <p className="font-semibold text-sm truncate">{visit.userName}</p>
+                            <span className="text-[10px] font-bold text-white/20 tabular-nums">
+                              {format(new Date(visit.timestamp), 'HH:mm')}
+                            </span>
+                          </div>
+                          <p className="text-xs text-white/40 truncate">{visit.reason} • {visit.department}</p>
+                        </div>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] h-5 bg-secondary/10 text-primary border-none">
-                        {visit.classification}
-                      </Badge>
-                    </div>
-                  ))}
-                  {filteredVisits.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      No visits recorded for this selection.
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                    {filteredVisits.length === 0 && (
+                      <div className="text-center py-20 text-white/20">
+                        <Activity className="h-12 w-12 mx-auto mb-4 opacity-10" />
+                        <p className="text-sm">No activity detected for this filter</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </main>
