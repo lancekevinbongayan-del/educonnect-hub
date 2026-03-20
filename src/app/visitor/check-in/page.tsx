@@ -17,6 +17,16 @@ const DEPARTMENTS = [
   'College of Business and Accountancy',
   'College of Nursing',
   'College of Education',
+  'College of Law',
+  'College of Music',
+  'College of Communication',
+  'College of Architecture',
+  'College of Medicine',
+  'College of Agriculture',
+  'College of Hospitality Management',
+  'Graduate School',
+  'Senior High School',
+  'Basic Education Department',
 ];
 
 const REASONS = [

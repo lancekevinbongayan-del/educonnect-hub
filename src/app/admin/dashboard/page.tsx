@@ -18,6 +18,25 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { store, type Visit } from '@/lib/store';
 import { format, isToday, isWithinInterval, subDays } from 'date-fns';
 
+const DEPARTMENTS = [
+  'College of Computer Studies',
+  'College of Arts and Sciences',
+  'College of Engineering',
+  'College of Business and Accountancy',
+  'College of Nursing',
+  'College of Education',
+  'College of Law',
+  'College of Music',
+  'College of Communication',
+  'College of Architecture',
+  'College of Medicine',
+  'College of Agriculture',
+  'College of Hospitality Management',
+  'Graduate School',
+  'Senior High School',
+  'Basic Education Department',
+];
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -169,9 +188,9 @@ export default function AdminDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">All Departments</SelectItem>
-                      <SelectItem value="College of Computer Studies">Computer Studies</SelectItem>
-                      <SelectItem value="College of Engineering">Engineering</SelectItem>
-                      <SelectItem value="College of Arts and Sciences">Arts & Sciences</SelectItem>
+                      {DEPARTMENTS.map((dept) => (
+                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -186,6 +205,9 @@ export default function AdminDashboard() {
                       <SelectItem value="Consultation">Consultation</SelectItem>
                       <SelectItem value="Library Use">Library Use</SelectItem>
                       <SelectItem value="Administrative Transaction">Admin</SelectItem>
+                      <SelectItem value="Submission of Documents">Submissions</SelectItem>
+                      <SelectItem value="Exam/Assessment">Exams</SelectItem>
+                      <SelectItem value="Facility Usage">Facilities</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -200,6 +222,7 @@ export default function AdminDashboard() {
                       <SelectItem value="Student">Student</SelectItem>
                       <SelectItem value="Faculty">Faculty</SelectItem>
                       <SelectItem value="Staff">Staff</SelectItem>
+                      <SelectItem value="Guest">Guest</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
