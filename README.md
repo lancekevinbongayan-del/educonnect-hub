@@ -2,6 +2,16 @@
 
 A highly responsive, real-time visitor management and analytics platform designed specifically for New Era University (NEU). This system streamlines the institutional check-in process while providing administrators with powerful data-driven insights.
 
+## 🔗 Live Demo & Quick Start
+
+To experience the full functionality of the system, use the following institutional credentials:
+
+- **Institutional Email**: `jcesperanza@neu.edu.ph`
+- **Admin Password**: `admin123`
+- **Visitor Access**: Any email ending in `@neu.edu.ph` (e.g., `student@neu.edu.ph`)
+
+> **Note**: The `jcesperanza` account provides access to the unique **Role Selection** interface, allowing you to toggle between Visitor and Admin views.
+
 ## 🚀 Features
 
 ### For Visitors
