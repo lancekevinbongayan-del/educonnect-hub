@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   CheckCircle2, LogOut, MapPin, UserCircle, School, Building2, 
-  Library, GraduationCap, Users, BookOpen, ChevronRight, Menu
+  Library as LibraryIcon, GraduationCap, Users, BookOpen, ChevronRight, Menu
 } from 'lucide-react';
 import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
@@ -34,13 +34,23 @@ const DEPARTMENTS = [
   'Basic Education Department',
 ];
 
-const REASONS = [
-  'Consultation',
-  'Research',
-  'Study',
-  'Administrative Transaction',
-  'Submission of Documents',
-  'Inquiry'
+const LIBRARY_REASONS = [
+  'Library - Research',
+  'Library - Study',
+  'Library - Borrowing/Returning',
+  'Library - Computer Use',
+  'Reference Inquiry',
+  'Consultation'
+];
+
+const DEANS_OFFICE_REASONS = [
+  'Office Permission',
+  'Official Academic Request',
+  'Document Submission',
+  'Faculty Meeting',
+  'Enrollment Inquiry',
+  'Clearance Processing',
+  'Administrative Transaction'
 ];
 
 export default function VisitorCheckIn() {
@@ -64,6 +74,11 @@ export default function VisitorCheckIn() {
       }
     }
   }, [router]);
+
+  // Reset reason when office changes to ensure valid selection
+  useEffect(() => {
+    setReason('');
+  }, [office]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +111,8 @@ export default function VisitorCheckIn() {
     store.logout();
     router.push('/');
   };
+
+  const currentReasons = office === "Dean's Office" ? DEANS_OFFICE_REASONS : LIBRARY_REASONS;
 
   if (!user) return null;
 
@@ -160,7 +177,7 @@ export default function VisitorCheckIn() {
               </Label>
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { id: 'Library', icon: Library, label: 'Library' },
+                  { id: 'Library', icon: LibraryIcon, label: 'Library' },
                   { id: "Dean's Office", icon: GraduationCap, label: "Dean's Office" }
                 ].map((item) => (
                   <button
@@ -255,15 +272,15 @@ export default function VisitorCheckIn() {
                   <BookOpen className="h-3 w-3" />
                   Purpose of Visit
                 </Label>
-                <Select value={reason} onValueChange={setReason}>
+                <Select value={reason} onValueChange={setReason} disabled={!office}>
                   <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl text-white focus:ring-primary focus:border-primary px-5">
                     <div className="flex items-center gap-3">
                       <ChevronRight className="h-4 w-4 text-primary/60" />
-                      <SelectValue placeholder="Select purpose" />
+                      <SelectValue placeholder={!office ? "Select office first" : "Select purpose"} />
                     </div>
                   </SelectTrigger>
                   <SelectContent className="glass-card border-white/10 text-white">
-                    {REASONS.map((r) => (
+                    {currentReasons.map((r) => (
                       <SelectItem key={r} value={r}>{r}</SelectItem>
                     ))}
                   </SelectContent>
