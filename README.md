@@ -2,6 +2,9 @@
 
 A highly responsive, real-time visitor management and analytics platform designed specifically for New Era University (NEU). This system streamlines the institutional check-in process while providing administrators with powerful data-driven insights.
 
+## Live Demo
+Check out the live app here: [https://your-project-id.web.app](https://studio-6478887971-77ac8.web.app)
+
 To experience the full functionality of the system, use the following institutional credentials:
 
 - **Institutional Email**: `jcesperanza@neu.edu.ph`
