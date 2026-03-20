@@ -31,7 +31,10 @@ const DEPARTMENTS = [
 
 const REASONS = [
   'Consultation',
-  'Library Use',
+  'Library - Research',
+  'Library - Study',
+  'Library - Borrowing/Returning',
+  'Library - Computer Use',
   'Administrative Transaction',
   'Submission of Documents',
   'Exam/Assessment',
@@ -126,10 +129,10 @@ export default function VisitorCheckIn() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="department">College Department</Label>
+                <Label htmlFor="department">College / Department</Label>
                 <Select onValueChange={setDepartment} required>
                   <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select your department" />
+                    <SelectValue placeholder="Select college" />
                   </SelectTrigger>
                   <SelectContent>
                     {DEPARTMENTS.map((dept) => (

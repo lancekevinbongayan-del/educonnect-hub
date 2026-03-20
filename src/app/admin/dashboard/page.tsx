@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 import { store, type Visit } from '@/lib/store';
 import { format, isToday, isWithinInterval, subDays } from 'date-fns';
 
@@ -35,6 +36,18 @@ const DEPARTMENTS = [
   'Graduate School',
   'Senior High School',
   'Basic Education Department',
+];
+
+const REASONS = [
+  'Consultation',
+  'Library - Research',
+  'Library - Study',
+  'Library - Borrowing/Returning',
+  'Library - Computer Use',
+  'Administrative Transaction',
+  'Submission of Documents',
+  'Exam/Assessment',
+  'Facility Usage',
 ];
 
 export default function AdminDashboard() {
@@ -64,7 +77,11 @@ export default function AdminDashboard() {
 
       const matchDept = filterDept === 'All' || v.department === filterDept;
       const matchReason = filterReason === 'All' || v.reason === filterReason;
-      const matchClass = filterClass === 'All' || v.classification === filterClass;
+      
+      let matchClass = filterClass === 'All' || v.classification === filterClass;
+      if (filterClass === 'Employee') {
+        matchClass = v.classification === 'Faculty' || v.classification === 'Staff';
+      }
 
       return inTimeRange && matchDept && matchReason && matchClass;
     });
@@ -181,13 +198,13 @@ export default function AdminDashboard() {
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs uppercase text-muted-foreground">Department</Label>
+                  <Label className="text-xs uppercase text-muted-foreground">College / Department</Label>
                   <Select value={filterDept} onValueChange={setFilterDept}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All Departments" />
+                      <SelectValue placeholder="All Colleges" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="All">All Departments</SelectItem>
+                      <SelectItem value="All">All Colleges</SelectItem>
                       {DEPARTMENTS.map((dept) => (
                         <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                       ))}
@@ -195,19 +212,16 @@ export default function AdminDashboard() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs uppercase text-muted-foreground">Reason</Label>
+                  <Label className="text-xs uppercase text-muted-foreground">Reason for Visit</Label>
                   <Select value={filterReason} onValueChange={setFilterReason}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Reasons" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">All Reasons</SelectItem>
-                      <SelectItem value="Consultation">Consultation</SelectItem>
-                      <SelectItem value="Library Use">Library Use</SelectItem>
-                      <SelectItem value="Administrative Transaction">Admin</SelectItem>
-                      <SelectItem value="Submission of Documents">Submissions</SelectItem>
-                      <SelectItem value="Exam/Assessment">Exams</SelectItem>
-                      <SelectItem value="Facility Usage">Facilities</SelectItem>
+                      {REASONS.map((reason) => (
+                        <SelectItem key={reason} value={reason}>{reason}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -219,10 +233,11 @@ export default function AdminDashboard() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">All Classifications</SelectItem>
-                      <SelectItem value="Student">Student</SelectItem>
-                      <SelectItem value="Faculty">Faculty</SelectItem>
-                      <SelectItem value="Staff">Staff</SelectItem>
-                      <SelectItem value="Guest">Guest</SelectItem>
+                      <SelectItem value="Employee">Employee (Teacher/Staff)</SelectItem>
+                      <SelectItem value="Student">Student Only</SelectItem>
+                      <SelectItem value="Faculty">Faculty Only</SelectItem>
+                      <SelectItem value="Staff">Staff Only</SelectItem>
+                      <SelectItem value="Guest">Guest Only</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -300,8 +315,4 @@ export default function AdminDashboard() {
       </main>
     </div>
   );
-}
-
-function Label({ children, className }: { children: React.ReactNode, className?: string }) {
-  return <label className={`block font-medium ${className}`}>{children}</label>;
 }
