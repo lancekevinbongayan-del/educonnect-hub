@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -20,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, doc, updateDoc, query, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function UserManagement() {
   const router = useRouter();
@@ -76,8 +75,14 @@ export default function UserManagement() {
     }
   };
 
-  const handleLogout = () => {
-    auth.signOut();
+  const handleLogout = async () => {
+    if (authUser) {
+      await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
+        status: 'offline',
+        lastActive: serverTimestamp()
+      }, { merge: true });
+    }
+    await auth.signOut();
     router.push('/');
   };
 

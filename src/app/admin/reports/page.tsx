@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -14,7 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { generateDeanReport } from '@/ai/flows/generate-dean-report';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function DeanReports() {
   const router = useRouter();
@@ -73,8 +72,14 @@ export default function DeanReports() {
     }
   };
 
-  const handleLogout = () => {
-    auth.signOut();
+  const handleLogout = async () => {
+    if (authUser) {
+      await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
+        status: 'offline',
+        lastActive: serverTimestamp()
+      }, { merge: true });
+    }
+    await auth.signOut();
     router.push('/');
   };
 

@@ -131,7 +131,7 @@ export default function VisitorCheckIn() {
       // Explicitly mark session offline on logout
       await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
         status: 'offline',
-        lastActive: new Date().toISOString()
+        lastActive: serverTimestamp()
       }, { merge: true });
     }
     await auth.signOut();
