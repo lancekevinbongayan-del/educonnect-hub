@@ -2,8 +2,13 @@
 
 A highly responsive, real-time visitor management and analytics platform designed specifically for New Era University (NEU). This system streamlines the institutional check-in process while providing administrators with powerful data-driven insights.
 
+<<<<<<< HEAD
 ## 🔗 Live Demo & Quick Start
 ![Firebase Deployment](https://studio-6478887971-77ac8.web.app)
+=======
+## Live Demo
+[(educonnect-hub-bay.vercel.app)](https://educonnect-hub-bay.vercel.app/)
+>>>>>>> 921dee6c9e70172347d9c9d9a76fcd6cab88324e
 
 To experience the full functionality of the system, use the following institutional credentials:
 
@@ -11,8 +16,11 @@ To experience the full functionality of the system, use the following institutio
 - **Admin Password**: `admin123`
 - **Visitor Access**: Any email ending in `@neu.edu.ph` (e.g., `student@neu.edu.ph`)
 
+<<<<<<< HEAD
 > **Note**: The `jcesperanza` account provides access to the unique **Role Selection** interface, allowing you to toggle between Visitor and Admin views.
 
+=======
+>>>>>>> 921dee6c9e70172347d9c9d9a76fcd6cab88324e
 ## 🚀 Features
 
 ### For Visitors
