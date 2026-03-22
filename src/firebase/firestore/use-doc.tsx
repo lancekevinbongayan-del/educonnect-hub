@@ -1,6 +1,6 @@
 'use client';
     
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   DocumentReference,
   onSnapshot,
@@ -30,18 +30,17 @@ export interface UseDocResult<T> {
 export function useDoc<T = any>(
   memoizedDocRef: DocumentReference<DocumentData> | null | undefined,
 ): UseDocResult<T> {
-  type StateDataType = WithId<T> | null;
-
-  const [data, setData] = useState<StateDataType>(null);
-  // Initialize loading to true if we have a target to check
+  const [data, setData] = useState<WithId<T> | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(!!memoizedDocRef);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
-  // Synchronously update loading state if the ref changes
-  const [prevRef, setPrevRef] = useState(memoizedDocRef);
-  if (memoizedDocRef !== prevRef) {
-    setPrevRef(memoizedDocRef);
+  // Use a ref to track the current reference to handle sync updates to loading state
+  const prevRef = useRef(memoizedDocRef);
+
+  if (memoizedDocRef !== prevRef.current) {
+    prevRef.current = memoizedDocRef;
     setIsLoading(!!memoizedDocRef);
+    setData(null);
   }
 
   useEffect(() => {
@@ -66,15 +65,15 @@ export function useDoc<T = any>(
         setError(null);
         setIsLoading(false);
       },
-      (error: FirestoreError) => {
+      (err: FirestoreError) => {
         const contextualError = new FirestorePermissionError({
           operation: 'get',
           path: memoizedDocRef.path,
-        })
+        });
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
 
         errorEmitter.emit('permission-error', contextualError);
       }

@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, Menu, ShieldCheck, User, ArrowLeft } from 'lucide-react';
+import { LogIn, ShieldCheck, User, ArrowLeft, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, useUser } from '@/firebase';
+import { useAuth, useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { signInAnonymously, signInWithEmailAndPassword } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,23 +24,21 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'initial' | 'role-selection' | 'admin-password'>('initial');
 
+  // Authorization check: Check if user is admin
+  const adminDocRef = useMemoFirebase(() => 
+    authUser ? doc(firestore, 'roles_admin', authUser.uid) : null
+  , [firestore, authUser]);
+  const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
+
   useEffect(() => {
-    if (!isUserLoading && authUser) {
-      // If already logged in, we might want to check the profile
-      const checkProfile = async () => {
-        const userDoc = await getDoc(doc(firestore, 'users', authUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          if (userData.role === 'admin') {
-            router.push('/admin/dashboard');
-          } else {
-            router.push('/visitor/check-in');
-          }
-        }
-      };
-      checkProfile();
+    if (!isUserLoading && !isAdminChecking && authUser) {
+      if (adminData) {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/visitor/check-in');
+      }
     }
-  }, [authUser, isUserLoading, firestore, router]);
+  }, [authUser, isUserLoading, isAdminChecking, adminData, router]);
 
   const handleInitialLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +61,6 @@ export default function LoginPage() {
   const handleVisitorAccess = async () => {
     setLoading(true);
     try {
-      // For this prototype, we use anonymous sign-in linked to the email profile
       const userCredential = await signInAnonymously(auth);
       const uid = userCredential.user.uid;
       
@@ -87,8 +84,7 @@ export default function LoginPage() {
           updatedAt: new Date().toISOString()
         });
       }
-
-      router.push('/visitor/check-in');
+      // Redirect handled by useEffect
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Auth Error', description: error.message });
       setLoading(false);
@@ -99,19 +95,14 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      // Institutional fixed password for prototype convenience as per README
-      // In a real app, this would be actual Firebase Auth credentials
       await signInWithEmailAndPassword(auth, email, password);
-      
-      // Verification of admin role is handled by Firestore rules and dashboard logic
-      router.push('/admin/dashboard');
+      // Redirect handled by useEffect
     } catch (error: any) {
-      // Fallback for demo if the account doesn't exist yet in Firebase Auth
       if (password === 'admin123' && email === 'jcesperanza@neu.edu.ph') {
-         // Create dummy admin if it fails for prototype
          const userCredential = await signInAnonymously(auth);
-         await setDoc(doc(firestore, 'users', userCredential.user.uid), {
-            id: userCredential.user.uid,
+         const uid = userCredential.user.uid;
+         await setDoc(doc(firestore, 'users', uid), {
+            id: uid,
             email: email,
             fullName: 'JC Esperanza',
             role: 'admin',
@@ -119,9 +110,8 @@ export default function LoginPage() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
          });
-         // Also add to roles_admin for DBAC
-         await setDoc(doc(firestore, 'roles_admin', userCredential.user.uid), { isAdmin: true });
-         router.push('/admin/dashboard');
+         await setDoc(doc(firestore, 'roles_admin', uid), { isAdmin: true });
+         // Redirect handled by useEffect
       } else {
         toast({ variant: 'destructive', title: 'Invalid Credentials', description: error.message });
       }
@@ -130,9 +120,18 @@ export default function LoginPage() {
     }
   };
 
+  if (isUserLoading || (authUser && isAdminChecking)) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="animate-spin text-primary">
+          <Activity className="h-12 w-12" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen gradient-bg flex flex-col overflow-hidden">
-      {/* Navigation Header */}
       <nav className="w-full px-6 py-6 flex items-center justify-between z-20">
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 bg-white rounded-full p-1.5 shadow-xl">
@@ -147,7 +146,6 @@ export default function LoginPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
       <main className="flex-1 flex flex-col lg:flex-row items-center justify-center px-6 lg:px-24 gap-12 py-12">
         <div className="flex-1 space-y-8 text-center lg:text-left z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-primary-foreground border border-white/10">
@@ -164,8 +162,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Login Section */}
-        <div id="login-section" className="w-full max-w-md z-10 transition-all duration-500 transform hover:scale-[1.02]">
+        <div className="w-full max-w-md z-10 transition-all duration-500 transform hover:scale-[1.02]">
           <Card className="glass-card border-none overflow-hidden">
             <CardContent className="p-8 space-y-6">
               <div className="space-y-2">
@@ -263,7 +260,7 @@ export default function LoginPage() {
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <Button variant="secondary" className="flex-1 h-12 rounded-xl" onClick={() => setView('role-selection')}>
+                    <Button variant="secondary" className="flex-1 h-12 rounded-xl" onClick={() => setView('role-selection')} type="button">
                       Back
                     </Button>
                     <Button type="submit" className="flex-1 h-12 rounded-xl font-bold" disabled={loading}>
@@ -283,7 +280,6 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Decorative Circles */}
       <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] -z-10" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] -z-10" />
     </div>

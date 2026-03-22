@@ -84,10 +84,12 @@ export default function AdminDashboard() {
   const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
 
   useEffect(() => {
-    // Robust redirect logic: Only redirect if auth and admin checks are definitively finished
     if (!isUserLoading && !isAdminChecking) {
-      if (!authUser || !adminData) {
+      if (!authUser) {
         router.push('/');
+      } else if (!adminData) {
+        // If logged in but NOT an admin, push to visitor page
+        router.push('/visitor/check-in');
       }
     }
   }, [authUser, isUserLoading, isAdminChecking, adminData, router]);
@@ -122,8 +124,8 @@ export default function AdminDashboard() {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [filteredVisits]);
 
-  const handleLogout = () => {
-    auth.signOut();
+  const handleLogout = async () => {
+    await auth.signOut();
     router.push('/');
   };
 
@@ -148,7 +150,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen flex gradient-bg">
-      {/* Sidebar */}
       <aside className="w-72 glass-card border-none border-r border-white/5 hidden lg:flex flex-col">
         <div className="p-8 border-b border-white/5">
           <div className="flex items-center gap-3">
@@ -185,7 +186,6 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <header className="h-20 glass-card border-none border-b border-white/5 px-8 flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-4">
@@ -206,7 +206,6 @@ export default function AdminDashboard() {
         </header>
 
         <div className="p-8 space-y-8">
-          {/* Filter Bar */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 glass-card p-6 rounded-3xl border-none shadow-xl">
             <div className="space-y-2">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-white/40">College / Department</Label>
@@ -268,7 +267,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Quick Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="glass-card border-none shadow-xl overflow-hidden relative group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-primary/40 transition-colors" />
@@ -314,7 +312,6 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
-          {/* Detailed Distribution */}
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
             <div className="xl:col-span-3 space-y-6">
               <Card className="glass-card border-none shadow-xl">
