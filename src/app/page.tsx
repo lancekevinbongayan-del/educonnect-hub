@@ -32,12 +32,14 @@ export default function LoginPage() {
   const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
 
   useEffect(() => {
-    // Only redirect if we are not in the middle of a manual login operation
-    // and all auth/admin checks have concluded
+    // Automatic redirection for existing sessions
+    // Only fire if we are NOT currently in a manual login process
     if (!isUserLoading && !isAdminChecking && !loading && authUser) {
       if (adminData) {
         router.push('/admin/dashboard');
-      } else {
+      } else if (adminData === null && !isAdminChecking) {
+        // Only redirect to visitor if we are CERTAIN they are not an admin
+        // This handles users who refresh or return while logged in
         router.push('/visitor/check-in');
       }
     }
@@ -87,10 +89,11 @@ export default function LoginPage() {
           updatedAt: new Date().toISOString()
         });
       }
-      // Redirect handled by useEffect once loading is false
+      
+      // Manually route to visitor check-in
+      router.push('/visitor/check-in');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Auth Error', description: error.message });
-    } finally {
       setLoading(false);
     }
   };
@@ -99,12 +102,11 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      // For the specific admin account, we use a fallback anonymous sign-in if 
-      // the production password isn't set up yet for this environment
       if (email === 'jcesperanza@neu.edu.ph' && password === 'admin123') {
          const userCredential = await signInAnonymously(auth);
          const uid = userCredential.user.uid;
          
+         // Provision or update admin user profile
          await setDoc(doc(firestore, 'users', uid), {
             id: uid,
             email: email,
@@ -114,19 +116,23 @@ export default function LoginPage() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
          });
+         
+         // Grant admin role
          await setDoc(doc(firestore, 'roles_admin', uid), { isAdmin: true });
-         // Redirect handled by useEffect once loading is false
+         
+         // Manually route to dashboard immediately
+         router.push('/admin/dashboard');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
+        router.push('/admin/dashboard');
       }
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Invalid Credentials', description: error.message });
-    } finally {
       setLoading(false);
     }
   };
 
-  if (isUserLoading || (authUser && isAdminChecking) || loading) {
+  if (isUserLoading || (authUser && isAdminChecking) || (loading && view !== 'admin-password' && view !== 'initial')) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="animate-spin text-primary">
