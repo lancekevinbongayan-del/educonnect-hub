@@ -15,39 +15,25 @@ service cloud.firestore {
      * - /roles_admin/{userId}: An authorization-only collection where the presence of a 
      *   document signifies admin status.
      * - /visits/{visitId}: A flat collection of check-in records for real-time tracking.
-     * - /departments, /reasonsForVisit, /visitorClassifications: Static reference data.
+     * - /user_sessions/{sessionId}: Real-time presence tracking.
      *
      * Key Security Decisions:
      * 1. Authorization Independence: Admin status is checked via the 'roles_admin' collection 
      *    using 'exists()', decoupling authorization from the main 'users' profile.
      * 2. QAP Compliance: Visitors are denied 'list' access to the global '/visits' collection 
      *    to prevent data scraping; only individual 'get' or 'create' operations are allowed.
-     * 3. Prototyping Flexibility: While ownership and relational integrity (userId matching) 
-     *    are strictly enforced, data schemas and types are not validated to allow rapid iteration.
-     * 4. Denormalization for Performance: 'Visit' documents are expected to contain denormalized 
-     *    user and department data to facilitate high-speed dashboard filtering without rule-level joins.
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
 
-    /**
-     * Checks if the request is coming from an authenticated user.
-     */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /**
-     * Checks if the authenticated user has a corresponding document in the roles_admin collection.
-     * This is the primary check for administrative privileges.
-     */
     function isAdmin() {
       return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
-    /**
-     * Checks if the provided UID matches the authenticated user's UID.
-     */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
@@ -55,11 +41,7 @@ service cloud.firestore {
     // --- COLLECTION RULES ---
 
     /**
-     * @description Rules for user profiles. Users can manage their own profile; admins manage all.
-     * @path /users/{userId}
-     * @allow (create) if user is authenticated and userId matches their own UID.
-     * @deny (list) if user is not an administrator.
-     * @principle Enforces path-based ownership and self-provisioning.
+     * @description Rules for user profiles.
      */
     match /users/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
@@ -70,63 +52,28 @@ service cloud.firestore {
     }
 
     /**
-     * @description DBAC collection for admin roles. Document existence defines access.
-     * @path /roles_admin/{userId}
-     * @allow (get) if user is checking their own admin status or is an admin.
-     * @deny (list) if user is not an administrator.
-     * @principle Authorization Independence via dedicated role collection.
+     * @description DBAC collection for admin roles.
      */
     match /roles_admin/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow list: if isAdmin();
-      // Fixed: Allow users to create their own admin record for prototype provisioning
       allow create: if isOwner(userId);
       allow update, delete: if isAdmin();
     }
 
     /**
-     * @description Lookup data for Departments.
-     * @path /departments/{id}
-     * @allow (read) for any authenticated user to populate check-in forms.
-     * @deny (write) for non-admin users.
-     * @principle Public read with owner-only (admin) writes for reference data.
+     * @description Active session tracking for real-time presence.
      */
-    match /departments/{departmentId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+    match /user_sessions/{sessionId} {
+      allow get: if isSignedIn() && (isOwner(sessionId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isOwner(sessionId);
+      allow update: if isOwner(sessionId) || isAdmin();
+      allow delete: if isAdmin();
     }
 
     /**
-     * @description Lookup data for Reasons for Visit.
-     * @path /reasonsForVisit/{id}
-     * @allow (read) for any authenticated user.
-     * @deny (write) for non-admin users.
-     * @principle Public read with owner-only (admin) writes for reference data.
-     */
-    match /reasonsForVisit/{reasonForVisitId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Lookup data for Visitor Classifications.
-     * @path /visitorClassifications/{id}
-     * @allow (read) for any authenticated user.
-     * @deny (write) for non-admin users.
-     * @principle Public read with owner-only (admin) writes for reference data.
-     */
-    match /visitorClassifications/{visitorClassificationId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
-
-    /**
-     * @description Records of facility visits. Visitors create their records; Admins track all.
-     * @path /visits/{visitId}
-     * @allow (create) if userId in document matches authenticated user's UID.
-     * @allow (list) for admins to power the real-time dashboard.
-     * @deny (list) for visitors to ensure privacy and QAP compliance.
-     * @principle Relational integrity and role-based segregation for tracking.
+     * @description Records of facility visits.
      */
     match /visits/{visitId} {
       allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
@@ -134,6 +81,23 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update: if resource != null && (resource.data.userId == request.auth.uid || isAdmin()) && request.resource.data.userId == resource.data.userId;
       allow delete: if resource != null && isAdmin();
+    }
+
+    // --- REFERENCE DATA RULES ---
+
+    match /departments/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /reasonsForVisit/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /visitorClassifications/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }
