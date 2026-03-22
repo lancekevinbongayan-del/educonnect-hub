@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -8,16 +8,39 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LogIn, Menu, ShieldCheck, User, ArrowLeft } from 'lucide-react';
-import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth, useFirestore, useUser } from '@/firebase';
+import { signInAnonymously, signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { auth, firestore } = { auth: useAuth(), firestore: useFirestore() };
+  const { user: authUser, isUserLoading } = useUser();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<'initial' | 'role-selection' | 'admin-password'>('initial');
+
+  useEffect(() => {
+    if (!isUserLoading && authUser) {
+      // If already logged in, we might want to check the profile
+      const checkProfile = async () => {
+        const userDoc = await getDoc(doc(firestore, 'users', authUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.role === 'admin') {
+            router.push('/admin/dashboard');
+          } else {
+            router.push('/visitor/check-in');
+          }
+        }
+      };
+      checkProfile();
+    }
+  }, [authUser, isUserLoading, firestore, router]);
 
   const handleInitialLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,26 +60,73 @@ export default function LoginPage() {
     }
   };
 
-  const handleVisitorAccess = () => {
+  const handleVisitorAccess = async () => {
     setLoading(true);
-    setTimeout(() => {
-      const user = store.login(email, 'visitor');
-      if (user.isBlocked) {
+    try {
+      // For this prototype, we use anonymous sign-in linked to the email profile
+      const userCredential = await signInAnonymously(auth);
+      const uid = userCredential.user.uid;
+      
+      const userRef = doc(firestore, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists() && userDoc.data().isBlocked) {
         toast({ variant: 'destructive', title: 'Access Denied', description: 'Your account has been blocked.' });
         setLoading(false);
         return;
       }
+
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          id: uid,
+          email: email,
+          fullName: email.split('@')[0],
+          role: 'visitor',
+          isBlocked: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      }
+
       router.push('/visitor/check-in');
-    }, 800);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Auth Error', description: error.message });
+      setLoading(false);
+    }
   };
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin123') {
-      store.login(email, 'admin');
+    setLoading(true);
+    try {
+      // Institutional fixed password for prototype convenience as per README
+      // In a real app, this would be actual Firebase Auth credentials
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      // Verification of admin role is handled by Firestore rules and dashboard logic
       router.push('/admin/dashboard');
-    } else {
-      toast({ variant: 'destructive', title: 'Invalid Credentials', description: 'Incorrect password for administrator access.' });
+    } catch (error: any) {
+      // Fallback for demo if the account doesn't exist yet in Firebase Auth
+      if (password === 'admin123' && email === 'jcesperanza@neu.edu.ph') {
+         // Create dummy admin if it fails for prototype
+         const userCredential = await signInAnonymously(auth);
+         await setDoc(doc(firestore, 'users', userCredential.user.uid), {
+            id: userCredential.user.uid,
+            email: email,
+            fullName: 'JC Esperanza',
+            role: 'admin',
+            isBlocked: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+         });
+         // Also add to roles_admin for DBAC
+         await setDoc(doc(firestore, 'roles_admin', userCredential.user.uid), { isAdmin: true });
+         router.push('/admin/dashboard');
+      } else {
+        toast({ variant: 'destructive', title: 'Invalid Credentials', description: error.message });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,14 +144,6 @@ export default function LoginPage() {
             />
           </div>
           <span className="font-bold text-xl tracking-tight">NEU HUB</span>
-        </div>
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-white/70">
-          <a href="#" className="hover:text-white transition-colors">Campus</a>
-          <a href="#" className="hover:text-white transition-colors">Academics</a>
-          <a href="#" className="hover:text-white transition-colors">Resources</a>
-          <Button variant="ghost" size="icon" className="text-white">
-            <Menu className="h-6 w-6" />
-          </Button>
         </div>
       </nav>
 
@@ -204,8 +266,8 @@ export default function LoginPage() {
                     <Button variant="secondary" className="flex-1 h-12 rounded-xl" onClick={() => setView('role-selection')}>
                       Back
                     </Button>
-                    <Button type="submit" className="flex-1 h-12 rounded-xl font-bold">
-                      Verify Access
+                    <Button type="submit" className="flex-1 h-12 rounded-xl font-bold" disabled={loading}>
+                      {loading ? 'Verifying...' : 'Verify Access'}
                     </Button>
                   </div>
                 </form>

@@ -11,9 +11,10 @@ import {
   CheckCircle2, LogOut, MapPin, UserCircle, School, Building2, 
   Library as LibraryIcon, GraduationCap, Users, BookOpen, ChevronRight, Menu
 } from 'lucide-react';
-import { store } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useAuth, useFirestore, useUser } from '@/firebase';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 
 const DEPARTMENTS = [
   'College of Computer Studies',
@@ -56,31 +57,38 @@ const DEANS_OFFICE_REASONS = [
 export default function VisitorCheckIn() {
   const router = useRouter();
   const { toast } = useToast();
-  const [user, setUser] = useState<any>(null);
+  const { auth, firestore } = { auth: useAuth(), firestore: useFirestore() };
+  const { user: authUser, isUserLoading } = useUser();
+  
+  const [profile, setProfile] = useState<any>(null);
   const [department, setDepartment] = useState('');
   const [office, setOffice] = useState('');
   const [classification, setClassification] = useState('');
   const [reason, setReason] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const currentUser = store.getCurrentUser();
-    if (!currentUser || currentUser.role !== 'visitor') {
-      router.push('/');
-    } else {
-      setUser(currentUser);
-      if (currentUser.classification) {
-        setClassification(currentUser.classification);
+    if (!isUserLoading) {
+      if (!authUser) {
+        router.push('/');
+      } else {
+        const fetchProfile = async () => {
+          const userDoc = await getDoc(doc(firestore, 'users', authUser.uid));
+          if (userDoc.exists()) {
+            setProfile(userDoc.data());
+          }
+        };
+        fetchProfile();
       }
     }
-  }, [router]);
+  }, [authUser, isUserLoading, firestore, router]);
 
-  // Reset reason when office changes to ensure valid selection
   useEffect(() => {
     setReason('');
   }, [office]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!department || !office || !reason || !classification) {
       toast({
@@ -91,30 +99,41 @@ export default function VisitorCheckIn() {
       return;
     }
 
-    store.addVisit({
-      userEmail: user.email,
-      userName: user.name,
-      department: department,
-      office: office,
-      reason: reason,
-      classification: classification
-    });
+    setLoading(true);
+    try {
+      await addDoc(collection(firestore, 'visits'), {
+        userId: authUser?.uid,
+        userEmail: profile?.email || authUser?.email,
+        userFullName: profile?.fullName || profile?.name || 'Visitor',
+        department: department,
+        office: office,
+        reason: reason,
+        classification: classification,
+        timestamp: new Date().toISOString(),
+        checkInTime: serverTimestamp(),
+        status: 'checked-in'
+      });
 
-    setSubmitted(true);
-    toast({
-      title: 'Check-in Successful',
-      description: 'Your visit has been recorded.',
-    });
+      setSubmitted(true);
+      toast({
+        title: 'Check-in Successful',
+        description: 'Your visit has been recorded.',
+      });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Check-in Failed', description: error.message });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
-    store.logout();
+    auth.signOut();
     router.push('/');
   };
 
   const currentReasons = office === "Dean's Office" ? DEANS_OFFICE_REASONS : LIBRARY_REASONS;
 
-  if (!user) return null;
+  if (isUserLoading || !profile) return null;
 
   if (submitted) {
     return (
@@ -127,7 +146,7 @@ export default function VisitorCheckIn() {
           </div>
           <h2 className="text-3xl font-bold mb-4 text-white">Welcome to NEU Library!</h2>
           <p className="text-white/60 mb-10 leading-relaxed">
-            Thank you for checking in, <span className="text-white font-medium">{user.name}</span>. Your visit to the <span className="text-white font-medium">{office}</span> ({department}) as <span className="text-white font-medium">{classification}</span> is now logged.
+            Thank you for checking in, <span className="text-white font-medium">{profile.fullName}</span>. Your visit to the <span className="text-white font-medium">{office}</span> ({department}) as <span className="text-white font-medium">{classification}</span> is now logged.
           </p>
           <Button onClick={handleLogout} className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90">
             Sign Out
@@ -290,12 +309,12 @@ export default function VisitorCheckIn() {
 
             {/* Submit Section */}
             <div className="pt-6 space-y-4">
-              <Button type="submit" className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white transition-all hover:scale-[1.01] active:scale-[0.99]">
-                Complete Check-in
+              <Button type="submit" className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white transition-all hover:scale-[1.01] active:scale-[0.99]" disabled={loading}>
+                {loading ? 'Processing...' : 'Complete Check-in'}
               </Button>
               <div className="flex items-center justify-center gap-2 text-[10px] text-white/30 font-bold uppercase tracking-widest">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                Logged in as {user.email}
+                Logged in as {authUser?.email || profile?.email}
               </div>
             </div>
           </form>

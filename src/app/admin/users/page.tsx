@@ -17,53 +17,74 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { store, type User } from '@/lib/store';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 
 export default function UserManagement() {
   const router = useRouter();
   const { toast } = useToast();
-  const [users, setUsers] = useState<User[]>([]);
+  const { auth, firestore } = { auth: useAuth(), firestore: useFirestore() };
+  const { user: authUser, isUserLoading } = useUser();
+  
   const [search, setSearch] = useState('');
 
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
+  }, [firestore]);
+
+  const { data: usersRaw, isLoading: isUsersLoading } = useCollection(usersQuery);
+
   useEffect(() => {
-    const admin = store.getCurrentUser();
-    if (!admin || admin.role !== 'admin') {
+    if (!isUserLoading && !authUser) {
       router.push('/');
-    } else {
-      setUsers(store.getUsers());
     }
-  }, [router]);
+  }, [authUser, isUserLoading, router]);
+
+  const users = usersRaw || [];
 
   const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(search.toLowerCase()) || 
+    (u.fullName || u.name || '').toLowerCase().includes(search.toLowerCase()) || 
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleBlock = (user: User) => {
+  const toggleBlock = async (user: any) => {
     if (user.role === 'admin') {
       toast({ variant: 'destructive', title: 'Action Denied', description: 'Administrators cannot be blocked.' });
       return;
     }
 
-    if (user.isBlocked) {
-      store.unblockUser(user.id);
-      toast({ title: 'User Unblocked', description: `${user.name} now has campus access.` });
-    } else {
-      store.blockUser(user.id);
-      toast({ title: 'User Blocked', description: `${user.name} has been restricted.` });
+    try {
+      await updateDoc(doc(firestore, 'users', user.id), {
+        isBlocked: !user.isBlocked,
+        updatedAt: new Date().toISOString()
+      });
+      toast({ 
+        title: user.isBlocked ? 'User Unblocked' : 'User Blocked', 
+        description: `${user.fullName || user.name} access updated.` 
+      });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
     }
-    setUsers(store.getUsers());
   };
 
   const handleLogout = () => {
-    store.logout();
+    auth.signOut();
     router.push('/');
   };
 
+  if (isUserLoading || isUsersLoading) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <Users className="h-12 w-12 animate-pulse text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Sidebar - Shared with dashboard */}
+      {/* Sidebar */}
       <aside className="w-64 bg-white border-r hidden lg:flex flex-col">
         <div className="p-6 border-b">
           <div className="flex items-center gap-2">
@@ -139,7 +160,7 @@ export default function UserManagement() {
                           <UserCircle className="h-6 w-6 text-primary/40" />
                         </div>
                         <div className="flex flex-col">
-                          <span className="font-medium text-sm">{user.name}</span>
+                          <span className="font-medium text-sm">{user.fullName || user.name || 'Anonymous'}</span>
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Mail className="h-3 w-3" />
                             {user.email}
@@ -148,7 +169,7 @@ export default function UserManagement() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="font-normal text-xs">{user.classification}</Badge>
+                      <Badge variant="outline" className="font-normal text-xs">{user.classification || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell>
                       {user.isBlocked ? (

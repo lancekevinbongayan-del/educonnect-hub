@@ -10,25 +10,34 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { store, type Visit } from '@/lib/store';
 import { generateDeanReport } from '@/ai/flows/generate-dean-report';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 
 export default function DeanReports() {
   const router = useRouter();
   const { toast } = useToast();
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const { auth, firestore } = { auth: useAuth(), firestore: useFirestore() };
+  const { user: authUser, isUserLoading } = useUser();
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<string | null>(null);
 
+  const visitsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'visits'), orderBy('timestamp', 'desc'), limit(500));
+  }, [firestore]);
+
+  const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
+
   useEffect(() => {
-    const admin = store.getCurrentUser();
-    if (!admin || admin.role !== 'admin') {
+    if (!isUserLoading && !authUser) {
       router.push('/');
-    } else {
-      setVisits(store.getVisits());
     }
-  }, [router]);
+  }, [authUser, isUserLoading, router]);
+
+  const visits = visitsRaw || [];
 
   const handleGenerateReport = async () => {
     if (visits.length === 0) {
@@ -58,13 +67,15 @@ export default function DeanReports() {
   };
 
   const handleLogout = () => {
-    store.logout();
+    auth.signOut();
     router.push('/');
   };
 
+  if (isUserLoading) return null;
+
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Sidebar - Shared */}
+      {/* Sidebar */}
       <aside className="w-64 bg-white border-r hidden lg:flex flex-col">
         <div className="p-6 border-b">
           <div className="flex items-center gap-2">
@@ -107,7 +118,7 @@ export default function DeanReports() {
           <Button 
             className="bg-accent text-primary font-medium shadow-sm hover:bg-accent/90" 
             onClick={handleGenerateReport}
-            disabled={isGenerating}
+            disabled={isGenerating || isVisitsLoading}
           >
             {isGenerating ? (
               <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />

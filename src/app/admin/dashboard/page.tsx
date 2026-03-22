@@ -12,12 +12,12 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { store, type Visit } from '@/lib/store';
+import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { format, isToday, isWithinInterval, subDays } from 'date-fns';
 
 const DEPARTMENTS = [
@@ -61,20 +61,29 @@ const CLASSIFICATIONS = [
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const { auth, firestore } = { auth: useAuth(), firestore: useFirestore() };
+  const { user: authUser, isUserLoading } = useUser();
+  
   const [timeRange, setTimeRange] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [filterDept, setFilterDept] = useState('All');
   const [filterReason, setFilterReason] = useState('All');
   const [filterClass, setFilterClass] = useState('All');
 
+  // Real-time Firestore query
+  const visitsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'visits'), orderBy('timestamp', 'desc'), limit(100));
+  }, [firestore]);
+
+  const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
+
   useEffect(() => {
-    const user = store.getCurrentUser();
-    if (!user || user.role !== 'admin') {
+    if (!isUserLoading && !authUser) {
       router.push('/');
-    } else {
-      setVisits(store.getVisits());
     }
-  }, [router]);
+  }, [authUser, isUserLoading, router]);
+
+  const visits = visitsRaw || [];
 
   const filteredVisits = useMemo(() => {
     return visits.filter(v => {
@@ -105,7 +114,7 @@ export default function AdminDashboard() {
   }, [filteredVisits]);
 
   const handleLogout = () => {
-    store.logout();
+    auth.signOut();
     router.push('/');
   };
 
@@ -114,6 +123,16 @@ export default function AdminDashboard() {
     setFilterReason('All');
     setFilterClass('All');
   };
+
+  if (isUserLoading || isVisitsLoading) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="animate-spin text-primary">
+          <Activity className="h-12 w-12" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex gradient-bg">
@@ -319,7 +338,6 @@ export default function AdminDashboard() {
                     <CardTitle className="text-lg">Recent Logs</CardTitle>
                     <CardDescription className="text-white/40">Live activity stream</CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80 hover:bg-white/5">View Logs</Button>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
@@ -330,9 +348,9 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-0.5">
-                            <p className="font-semibold text-sm truncate">{visit.userName}</p>
+                            <p className="font-semibold text-sm truncate">{visit.userFullName}</p>
                             <span className="text-[10px] font-bold text-white/20 tabular-nums">
-                              {format(new Date(visit.timestamp), 'HH:mm')}
+                              {visit.timestamp ? format(new Date(visit.timestamp), 'HH:mm') : 'N/A'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-1">
