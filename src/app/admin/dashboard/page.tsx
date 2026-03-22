@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { 
   Users, Calendar, Clock, Filter, Search, MoreVertical, 
-  LayoutDashboard, UserCircle, FileText, LogOut, ChevronRight, Activity, X, Monitor, Shield
+  LayoutDashboard, UserCircle, FileText, LogOut, ChevronRight, Activity, X, Monitor, Shield, Smartphone
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,13 +69,11 @@ export default function AdminDashboard() {
   const [filterReason, setFilterReason] = useState('All');
   const [filterClass, setFilterClass] = useState('All');
 
-  // Authorization check: Verify admin status
   const adminDocRef = useMemoFirebase(() => 
     authUser ? doc(firestore, 'roles_admin', authUser.uid) : null
   , [firestore, authUser]);
   const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
 
-  // Real-time Firestore queries (using useCollection which internally uses onSnapshot)
   const visitsQuery = useMemoFirebase(() => {
     if (!firestore || !adminData) return null;
     return query(collection(firestore, 'visits'), orderBy('timestamp', 'desc'), limit(100));
@@ -83,7 +81,7 @@ export default function AdminDashboard() {
 
   const sessionsQuery = useMemoFirebase(() => {
     if (!firestore || !adminData) return null;
-    return query(collection(firestore, 'user_sessions'), limit(50));
+    return query(collection(firestore, 'user_sessions'), orderBy('lastActive', 'desc'), limit(50));
   }, [firestore, adminData]);
 
   const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
@@ -134,10 +132,9 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     if (authUser) {
-      // Explicitly mark session offline on logout
       await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
         status: 'offline',
-        lastActive: new Date().toISOString()
+        lastActive: serverTimestamp()
       }, { merge: true });
     }
     await auth.signOut();
@@ -227,7 +224,7 @@ export default function AdminDashboard() {
                 <SelectTrigger className="bg-white/5 border-white/10 h-11 rounded-xl focus:ring-primary">
                   <SelectValue placeholder="All Units" />
                 </SelectTrigger>
-                <SelectContent className="glass-card border-white/10">
+                <SelectContent className="glass-card border-white/10 text-white">
                   <SelectItem value="All">All Units</SelectItem>
                   {DEPARTMENTS.map(dept => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
@@ -242,7 +239,7 @@ export default function AdminDashboard() {
                 <SelectTrigger className="bg-white/5 border-white/10 h-11 rounded-xl focus:ring-primary">
                   <SelectValue placeholder="All Reasons" />
                 </SelectTrigger>
-                <SelectContent className="glass-card border-white/10">
+                <SelectContent className="glass-card border-white/10 text-white">
                   <SelectItem value="All">All Reasons</SelectItem>
                   {REASONS.map(reason => (
                     <SelectItem key={reason} value={reason}>{reason}</SelectItem>
@@ -257,7 +254,7 @@ export default function AdminDashboard() {
                 <SelectTrigger className="bg-white/5 border-white/10 h-11 rounded-xl focus:ring-primary">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
-                <SelectContent className="glass-card border-white/10">
+                <SelectContent className="glass-card border-white/10 text-white">
                   <SelectItem value="All">All Types</SelectItem>
                   {CLASSIFICATIONS.map(cls => (
                     <SelectItem key={cls} value={cls}>{cls}</SelectItem>
@@ -296,7 +293,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
             
-            <Card className="glass-card border-none shadow-xl">
+            <Card className="glass-card border-none shadow-xl overflow-hidden">
               <CardHeader className="pb-2">
                 <CardDescription className="text-white/40 uppercase tracking-widest text-[10px] font-bold">Active Sessions</CardDescription>
                 <CardTitle className="text-4xl font-bold text-green-400">
@@ -371,27 +368,40 @@ export default function AdminDashboard() {
               <Card className="glass-card border-none shadow-xl">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">Active Sessions</CardTitle>
-                    <CardDescription className="text-white/40">Real-time presence monitoring</CardDescription>
+                    <CardTitle className="text-lg">Real-time Active Sessions</CardTitle>
+                    <CardDescription className="text-white/40">Monitoring presence across platforms</CardDescription>
                   </div>
                   <Badge className="bg-green-500/20 text-green-400 border-green-500/20">{activeSessions.length} Online</Badge>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {activeSessions.map((session) => (
-                      <div key={session.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                        <div className="relative">
-                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                            {session.role === 'admin' ? <Shield className="h-5 w-5 text-primary" /> : <UserCircle className="h-6 w-6 text-white/40" />}
+                      <div key={session.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <div className="relative shrink-0">
+                          <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
+                            {session.role === 'admin' ? <Shield className="h-6 w-6 text-primary" /> : <UserCircle className="h-8 w-8 text-white/40" />}
                           </div>
-                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#0a0a0c] rounded-full" />
+                          <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500 border-2 border-[#0a0a0c]"></span>
+                          </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm truncate">{session.fullName}</p>
-                          <p className="text-[10px] text-white/40 truncate uppercase tracking-widest">{session.role} • {session.email}</p>
+                          <p className="font-bold text-sm truncate">{session.fullName}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-white/40 truncate uppercase tracking-widest">{session.role}</span>
+                            <span className="text-white/20">•</span>
+                            <span className="flex items-center gap-1 text-[10px] text-white/40">
+                              {session.deviceType === 'Mobile' ? <Smartphone className="h-3 w-3" /> : <Monitor className="h-3 w-3" />}
+                              {session.deviceType || 'Web'}
+                            </span>
+                          </div>
                         </div>
-                        <div className="text-[9px] font-bold text-white/20 tabular-nums">
-                          {format(new Date(session.lastActive), 'HH:mm:ss')}
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold text-white/20 tabular-nums">
+                            {session.lastActive ? format(new Date(session.lastActive.seconds ? session.lastActive.toDate() : session.lastActive), 'HH:mm:ss') : '--:--:--'}
+                          </p>
+                          <p className="text-[9px] text-white/10 uppercase font-bold mt-1">Activity</p>
                         </div>
                       </div>
                     ))}
@@ -417,7 +427,7 @@ export default function AdminDashboard() {
                 <CardContent>
                   <div className="space-y-6">
                     {filteredVisits.slice(0, 8).map((visit) => (
-                      <div key={visit.id} className="flex items-start gap-4 p-3 rounded-2xl hover:bg-white/5 transition-colors group">
+                      <div key={visit.id} className="flex items-start gap-4 p-3 rounded-2xl hover:bg-white/5 transition-colors group animate-in fade-in duration-300">
                         <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10 group-hover:border-primary/50 transition-colors">
                           <UserCircle className="h-6 w-6 text-white/20" />
                         </div>
