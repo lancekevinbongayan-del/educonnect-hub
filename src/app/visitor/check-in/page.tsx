@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -129,6 +128,7 @@ export default function VisitorCheckIn() {
 
   const handleLogout = async () => {
     if (authUser) {
+      // Explicitly mark session offline on logout
       await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
         status: 'offline',
         lastActive: new Date().toISOString()
@@ -195,7 +195,6 @@ export default function VisitorCheckIn() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8 pb-20">
-            {/* Target Office Selection - Icon Grid */}
             <div className="space-y-4">
               <Label className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
                 <Building2 className="h-3 w-3" />
@@ -232,7 +231,6 @@ export default function VisitorCheckIn() {
               </div>
             </div>
 
-            {/* Classification Selection - Icon Grid */}
             <div className="space-y-4">
               <Label className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
                 <Users className="h-3 w-3" />
@@ -271,7 +269,6 @@ export default function VisitorCheckIn() {
               </div>
             </div>
 
-            {/* Dropdown Selections */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <Label className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
@@ -314,7 +311,6 @@ export default function VisitorCheckIn() {
               </div>
             </div>
 
-            {/* Submit Section */}
             <div className="pt-6 space-y-4">
               <Button type="submit" className="w-full h-16 text-xl font-bold rounded-2xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 text-white transition-all hover:scale-[1.01] active:scale-[0.99]" disabled={loading}>
                 {loading ? 'Processing...' : 'Complete Check-in'}

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -76,7 +75,7 @@ export default function AdminDashboard() {
   , [firestore, authUser]);
   const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
 
-  // Real-time Firestore queries
+  // Real-time Firestore queries (using useCollection which internally uses onSnapshot)
   const visitsQuery = useMemoFirebase(() => {
     if (!firestore || !adminData) return null;
     return query(collection(firestore, 'visits'), orderBy('timestamp', 'desc'), limit(100));
@@ -135,6 +134,7 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     if (authUser) {
+      // Explicitly mark session offline on logout
       await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
         status: 'offline',
         lastActive: new Date().toISOString()

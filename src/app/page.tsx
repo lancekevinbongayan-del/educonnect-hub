@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -41,18 +40,6 @@ export default function LoginPage() {
       }
     }
   }, [authUser, isUserLoading, isAdminChecking, adminData, router, loading]);
-
-  const updateSession = async (uid: string, userEmail: string, fullName: string, role: string) => {
-    await setDoc(doc(firestore, 'user_sessions', uid), {
-      id: uid,
-      userId: uid,
-      email: userEmail,
-      fullName: fullName,
-      role: role,
-      lastActive: new Date().toISOString(),
-      status: 'online'
-    }, { merge: true });
-  };
 
   const handleInitialLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +87,7 @@ export default function LoginPage() {
         });
       }
       
-      await updateSession(uid, email, fullName, 'visitor');
+      // Session status is now handled automatically by FirebaseProvider
       router.push('/visitor/check-in');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Auth Error', description: error.message });
@@ -131,15 +118,10 @@ export default function LoginPage() {
            updatedAt: new Date().toISOString()
          });
          
-         await updateSession(uid, email, 'JC Esperanza', 'admin');
          toast({ title: 'Welcome, Admin', description: 'Access verified for Institutional Hub.' });
          router.push('/admin/dashboard');
       } else {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const uid = userCredential.user.uid;
-        const userDoc = await getDoc(doc(firestore, 'users', uid));
-        const fullName = userDoc.exists() ? userDoc.data().fullName : email.split('@')[0];
-        await updateSession(uid, email, fullName, 'admin');
+        await signInWithEmailAndPassword(auth, email, password);
         router.push('/admin/dashboard');
       }
     } catch (error: any) {
