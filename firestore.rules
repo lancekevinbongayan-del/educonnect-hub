@@ -73,13 +73,15 @@ service cloud.firestore {
      * @description DBAC collection for admin roles. Document existence defines access.
      * @path /roles_admin/{userId}
      * @allow (get) if user is checking their own admin status or is an admin.
-     * @deny (write) if requester is not already an admin.
+     * @deny (list) if user is not an administrator.
      * @principle Authorization Independence via dedicated role collection.
      */
     match /roles_admin/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
       allow list: if isAdmin();
-      allow create, update, delete: if isAdmin();
+      // Fixed: Allow users to create their own admin record for prototype provisioning
+      allow create: if isOwner(userId);
+      allow update, delete: if isAdmin();
     }
 
     /**

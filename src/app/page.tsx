@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -39,7 +38,6 @@ export default function LoginPage() {
         router.push('/admin/dashboard');
       } else if (adminData === null && !isAdminChecking) {
         // Only redirect to visitor if we are CERTAIN they are not an admin
-        // This handles users who refresh or return while logged in
         router.push('/visitor/check-in');
       }
     }
@@ -90,7 +88,6 @@ export default function LoginPage() {
         });
       }
       
-      // Manually route to visitor check-in
       router.push('/visitor/check-in');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Auth Error', description: error.message });
@@ -106,7 +103,7 @@ export default function LoginPage() {
          const userCredential = await signInAnonymously(auth);
          const uid = userCredential.user.uid;
          
-         // Provision or update admin user profile
+         // Provision user profile
          await setDoc(doc(firestore, 'users', uid), {
             id: uid,
             email: email,
@@ -117,22 +114,26 @@ export default function LoginPage() {
             updatedAt: new Date().toISOString()
          });
          
-         // Grant admin role
-         await setDoc(doc(firestore, 'roles_admin', uid), { isAdmin: true });
+         // Provision admin role
+         await setDoc(doc(firestore, 'roles_admin', uid), { 
+           isAdmin: true,
+           updatedAt: new Date().toISOString()
+         });
          
-         // Manually route to dashboard immediately
+         // Success
+         toast({ title: 'Welcome, Admin', description: 'Access verified for Institutional Hub.' });
          router.push('/admin/dashboard');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         router.push('/admin/dashboard');
       }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Invalid Credentials', description: error.message });
+      toast({ variant: 'destructive', title: 'Access Denied', description: error.message || 'Verification failed.' });
       setLoading(false);
     }
   };
 
-  if (isUserLoading || (authUser && isAdminChecking) || (loading && view !== 'admin-password' && view !== 'initial')) {
+  if (isUserLoading || (authUser && isAdminChecking)) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="animate-spin text-primary">
@@ -272,7 +273,7 @@ export default function LoginPage() {
                     />
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <Button variant="secondary" className="flex-1 h-12 rounded-xl" onClick={() => setView('role-selection')} type="button">
+                    <Button variant="secondary" className="flex-1 h-12 rounded-xl" onClick={() => setView('role-selection')} type="button" disabled={loading}>
                       Back
                     </Button>
                     <Button type="submit" className="flex-1 h-12 rounded-xl font-bold" disabled={loading}>
