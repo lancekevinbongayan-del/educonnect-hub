@@ -3,7 +3,7 @@
 A highly responsive, real-time visitor management and analytics platform designed specifically for New Era University (NEU). This system streamlines the institutional check-in process while providing administrators with powerful data-driven insights.
 
 ## Live Demo
-(educonnect-hub-bay.vercel.app)
+[(educonnect-hub-bay.vercel.app)](https://educonnect-hub-bay.vercel.app/)
 
 To experience the full functionality of the system, use the following institutional credentials:
 
