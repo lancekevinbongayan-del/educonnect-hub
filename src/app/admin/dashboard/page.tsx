@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,8 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 import { format, isToday, isWithinInterval, subDays } from 'date-fns';
 
 const DEPARTMENTS = [
@@ -69,19 +70,25 @@ export default function AdminDashboard() {
   const [filterReason, setFilterReason] = useState('All');
   const [filterClass, setFilterClass] = useState('All');
 
-  // Real-time Firestore query
+  // Authorization check: Verify admin status before querying protected data
+  const adminDocRef = useMemoFirebase(() => 
+    authUser ? doc(firestore, 'roles_admin', authUser.uid) : null
+  , [firestore, authUser]);
+  const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
+
+  // Real-time Firestore query - Only run if authorized
   const visitsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !adminData) return null;
     return query(collection(firestore, 'visits'), orderBy('timestamp', 'desc'), limit(100));
-  }, [firestore]);
+  }, [firestore, adminData]);
 
   const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
 
   useEffect(() => {
-    if (!isUserLoading && !authUser) {
+    if (!isUserLoading && !isAdminChecking && (!authUser || !adminData)) {
       router.push('/');
     }
-  }, [authUser, isUserLoading, router]);
+  }, [authUser, isUserLoading, isAdminChecking, adminData, router]);
 
   const visits = visitsRaw || [];
 
@@ -124,7 +131,7 @@ export default function AdminDashboard() {
     setFilterClass('All');
   };
 
-  if (isUserLoading || isVisitsLoading) {
+  if (isUserLoading || isAdminChecking || isVisitsLoading) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="animate-spin text-primary">

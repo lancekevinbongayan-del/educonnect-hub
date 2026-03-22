@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
   Users, Search, UserCircle, LayoutDashboard, FileText, LogOut, 
-  MoreHorizontal, Ban, ShieldCheck, Mail
+  MoreHorizontal, Ban, ShieldCheck, Mail, Activity
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 
 export default function UserManagement() {
@@ -29,18 +30,24 @@ export default function UserManagement() {
   
   const [search, setSearch] = useState('');
 
+  // Authorization check
+  const adminDocRef = useMemoFirebase(() => 
+    authUser ? doc(firestore, 'roles_admin', authUser.uid) : null
+  , [firestore, authUser]);
+  const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
+
   const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !adminData) return null;
     return query(collection(firestore, 'users'), orderBy('createdAt', 'desc'));
-  }, [firestore]);
+  }, [firestore, adminData]);
 
   const { data: usersRaw, isLoading: isUsersLoading } = useCollection(usersQuery);
 
   useEffect(() => {
-    if (!isUserLoading && !authUser) {
+    if (!isUserLoading && !isAdminChecking && (!authUser || !adminData)) {
       router.push('/');
     }
-  }, [authUser, isUserLoading, router]);
+  }, [authUser, isUserLoading, isAdminChecking, adminData, router]);
 
   const users = usersRaw || [];
 
@@ -74,10 +81,12 @@ export default function UserManagement() {
     router.push('/');
   };
 
-  if (isUserLoading || isUsersLoading) {
+  if (isUserLoading || isAdminChecking || isUsersLoading) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
-        <Users className="h-12 w-12 animate-pulse text-primary" />
+        <div className="animate-spin text-primary">
+          <Activity className="h-12 w-12" />
+        </div>
       </div>
     );
   }

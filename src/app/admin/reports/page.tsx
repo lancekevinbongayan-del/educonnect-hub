@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -5,15 +6,15 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
   Users, UserCircle, LayoutDashboard, FileText, LogOut, Sparkles, 
-  RefreshCcw, Download, Clock, TrendingUp
+  RefreshCcw, Download, Clock, TrendingUp, Activity
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { generateDeanReport } from '@/ai/flows/generate-dean-report';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 
 export default function DeanReports() {
   const router = useRouter();
@@ -24,18 +25,24 @@ export default function DeanReports() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [report, setReport] = useState<string | null>(null);
 
+  // Authorization check
+  const adminDocRef = useMemoFirebase(() => 
+    authUser ? doc(firestore, 'roles_admin', authUser.uid) : null
+  , [firestore, authUser]);
+  const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
+
   const visitsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !adminData) return null;
     return query(collection(firestore, 'visits'), orderBy('timestamp', 'desc'), limit(500));
-  }, [firestore]);
+  }, [firestore, adminData]);
 
   const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
 
   useEffect(() => {
-    if (!isUserLoading && !authUser) {
+    if (!isUserLoading && !isAdminChecking && (!authUser || !adminData)) {
       router.push('/');
     }
-  }, [authUser, isUserLoading, router]);
+  }, [authUser, isUserLoading, isAdminChecking, adminData, router]);
 
   const visits = visitsRaw || [];
 
@@ -71,7 +78,15 @@ export default function DeanReports() {
     router.push('/');
   };
 
-  if (isUserLoading) return null;
+  if (isUserLoading || isAdminChecking) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center">
+        <div className="animate-spin text-primary">
+          <Activity className="h-12 w-12" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex bg-background">
