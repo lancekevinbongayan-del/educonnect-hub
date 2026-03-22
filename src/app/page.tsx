@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -32,16 +33,26 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Automatic redirection for existing sessions
-    // Only fire if we are NOT currently in a manual login process
     if (!isUserLoading && !isAdminChecking && !loading && authUser) {
       if (adminData) {
         router.push('/admin/dashboard');
       } else if (adminData === null && !isAdminChecking) {
-        // Only redirect to visitor if we are CERTAIN they are not an admin
         router.push('/visitor/check-in');
       }
     }
   }, [authUser, isUserLoading, isAdminChecking, adminData, router, loading]);
+
+  const updateSession = async (uid: string, userEmail: string, fullName: string, role: string) => {
+    await setDoc(doc(firestore, 'user_sessions', uid), {
+      id: uid,
+      userId: uid,
+      email: userEmail,
+      fullName: fullName,
+      role: role,
+      lastActive: new Date().toISOString(),
+      status: 'online'
+    }, { merge: true });
+  };
 
   const handleInitialLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +77,7 @@ export default function LoginPage() {
     try {
       const userCredential = await signInAnonymously(auth);
       const uid = userCredential.user.uid;
+      const fullName = email.split('@')[0];
       
       const userRef = doc(firestore, 'users', uid);
       const userDoc = await getDoc(userRef);
@@ -80,7 +92,7 @@ export default function LoginPage() {
         await setDoc(userRef, {
           id: uid,
           email: email,
-          fullName: email.split('@')[0],
+          fullName: fullName,
           role: 'visitor',
           isBlocked: false,
           createdAt: new Date().toISOString(),
@@ -88,6 +100,7 @@ export default function LoginPage() {
         });
       }
       
+      await updateSession(uid, email, fullName, 'visitor');
       router.push('/visitor/check-in');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Auth Error', description: error.message });
@@ -103,7 +116,6 @@ export default function LoginPage() {
          const userCredential = await signInAnonymously(auth);
          const uid = userCredential.user.uid;
          
-         // Provision user profile
          await setDoc(doc(firestore, 'users', uid), {
             id: uid,
             email: email,
@@ -114,17 +126,20 @@ export default function LoginPage() {
             updatedAt: new Date().toISOString()
          });
          
-         // Provision admin role
          await setDoc(doc(firestore, 'roles_admin', uid), { 
            isAdmin: true,
            updatedAt: new Date().toISOString()
          });
          
-         // Success
+         await updateSession(uid, email, 'JC Esperanza', 'admin');
          toast({ title: 'Welcome, Admin', description: 'Access verified for Institutional Hub.' });
          router.push('/admin/dashboard');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
+        const userDoc = await getDoc(doc(firestore, 'users', uid));
+        const fullName = userDoc.exists() ? userDoc.data().fullName : email.split('@')[0];
+        await updateSession(uid, email, fullName, 'admin');
         router.push('/admin/dashboard');
       }
     } catch (error: any) {

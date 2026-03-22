@@ -9,7 +9,7 @@ import {
 } from 'recharts';
 import { 
   Users, Calendar, Clock, Filter, Search, MoreVertical, 
-  LayoutDashboard, UserCircle, FileText, LogOut, ChevronRight, Activity, X
+  LayoutDashboard, UserCircle, FileText, LogOut, ChevronRight, Activity, X, Monitor, Shield
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, setDoc } from 'firebase/firestore';
 import { format, isToday, isWithinInterval, subDays } from 'date-fns';
 
 const DEPARTMENTS = [
@@ -76,27 +76,34 @@ export default function AdminDashboard() {
   , [firestore, authUser]);
   const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
 
-  // Real-time Firestore query - Only run if authorized
+  // Real-time Firestore queries
   const visitsQuery = useMemoFirebase(() => {
     if (!firestore || !adminData) return null;
     return query(collection(firestore, 'visits'), orderBy('timestamp', 'desc'), limit(100));
   }, [firestore, adminData]);
 
+  const sessionsQuery = useMemoFirebase(() => {
+    if (!firestore || !adminData) return null;
+    return query(collection(firestore, 'user_sessions'), limit(50));
+  }, [firestore, adminData]);
+
   const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
+  const { data: sessionsRaw, isLoading: isSessionsLoading } = useCollection(sessionsQuery);
 
   useEffect(() => {
-    // Definitive redirect logic: only redirect if checks are CONCLUDED
     if (!isUserLoading && !isAdminChecking) {
       if (!authUser) {
         router.push('/');
       } else if (!adminData) {
-        // Logged in but confirmed NOT an admin
         router.push('/visitor/check-in');
       }
     }
   }, [authUser, isUserLoading, isAdminChecking, adminData, router]);
 
   const visits = visitsRaw || [];
+  const activeSessions = useMemo(() => {
+    return (sessionsRaw || []).filter(s => s.status === 'online');
+  }, [sessionsRaw]);
 
   const filteredVisits = useMemo(() => {
     return visits.filter(v => {
@@ -127,6 +134,12 @@ export default function AdminDashboard() {
   }, [filteredVisits]);
 
   const handleLogout = async () => {
+    if (authUser) {
+      await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
+        status: 'offline',
+        lastActive: new Date().toISOString()
+      }, { merge: true });
+    }
     await auth.signOut();
     router.push('/');
   };
@@ -147,7 +160,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // Final protection to ensure UI doesn't render unauthorized content
   if (!authUser || !adminData) return null;
 
   return (
@@ -269,7 +281,7 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <Card className="glass-card border-none shadow-xl overflow-hidden relative group">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-3xl -mr-12 -mt-12 group-hover:bg-primary/40 transition-colors" />
               <CardHeader className="pb-2">
@@ -284,6 +296,21 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
             
+            <Card className="glass-card border-none shadow-xl">
+              <CardHeader className="pb-2">
+                <CardDescription className="text-white/40 uppercase tracking-widest text-[10px] font-bold">Active Sessions</CardDescription>
+                <CardTitle className="text-4xl font-bold text-green-400">
+                  {activeSessions.length}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs text-white/40 flex items-center">
+                  <Monitor className="h-3 w-3 mr-1.5" />
+                  Online community members
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="glass-card border-none shadow-xl">
               <CardHeader className="pb-2">
                 <CardDescription className="text-white/40 uppercase tracking-widest text-[10px] font-bold">Unique Visitors</CardDescription>
@@ -308,14 +335,14 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-xs text-white/40">
-                  Detected highest volume concentration
+                  Highest volume concentration
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
-            <div className="xl:col-span-3 space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <div className="xl:col-span-8 space-y-8">
               <Card className="glass-card border-none shadow-xl">
                 <CardHeader>
                   <CardTitle className="text-lg">Campus Volume</CardTitle>
@@ -340,10 +367,47 @@ export default function AdminDashboard() {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
+
+              <Card className="glass-card border-none shadow-xl">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Active Sessions</CardTitle>
+                    <CardDescription className="text-white/40">Real-time presence monitoring</CardDescription>
+                  </div>
+                  <Badge className="bg-green-500/20 text-green-400 border-green-500/20">{activeSessions.length} Online</Badge>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {activeSessions.map((session) => (
+                      <div key={session.id} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                        <div className="relative">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            {session.role === 'admin' ? <Shield className="h-5 w-5 text-primary" /> : <UserCircle className="h-6 w-6 text-white/40" />}
+                          </div>
+                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#0a0a0c] rounded-full" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{session.fullName}</p>
+                          <p className="text-[10px] text-white/40 truncate uppercase tracking-widest">{session.role} • {session.email}</p>
+                        </div>
+                        <div className="text-[9px] font-bold text-white/20 tabular-nums">
+                          {format(new Date(session.lastActive), 'HH:mm:ss')}
+                        </div>
+                      </div>
+                    ))}
+                    {activeSessions.length === 0 && (
+                      <div className="col-span-full text-center py-12 text-white/20">
+                        <Monitor className="h-12 w-12 mx-auto mb-4 opacity-10" />
+                        <p className="text-sm">No active sessions detected</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            <div className="xl:col-span-2 space-y-6">
-              <Card className="glass-card border-none shadow-xl">
+            <div className="xl:col-span-4 space-y-6">
+              <Card className="glass-card border-none shadow-xl h-full">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle className="text-lg">Recent Logs</CardTitle>
@@ -352,7 +416,7 @@ export default function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    {filteredVisits.slice(0, 6).map((visit) => (
+                    {filteredVisits.slice(0, 8).map((visit) => (
                       <div key={visit.id} className="flex items-start gap-4 p-3 rounded-2xl hover:bg-white/5 transition-colors group">
                         <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10 group-hover:border-primary/50 transition-colors">
                           <UserCircle className="h-6 w-6 text-white/20" />
@@ -376,7 +440,7 @@ export default function AdminDashboard() {
                     {filteredVisits.length === 0 && (
                       <div className="text-center py-20 text-white/20">
                         <Activity className="h-12 w-12 mx-auto mb-4 opacity-10" />
-                        <p className="text-sm">No activity detected for current filters</p>
+                        <p className="text-sm">No activity detected</p>
                       </div>
                     )}
                   </div>

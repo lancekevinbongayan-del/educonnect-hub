@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -14,7 +15,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc } from 'firebase/firestore';
 
 const DEPARTMENTS = [
   'College of Computer Studies',
@@ -126,8 +127,14 @@ export default function VisitorCheckIn() {
     }
   };
 
-  const handleLogout = () => {
-    auth.signOut();
+  const handleLogout = async () => {
+    if (authUser) {
+      await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
+        status: 'offline',
+        lastActive: new Date().toISOString()
+      }, { merge: true });
+    }
+    await auth.signOut();
     router.push('/');
   };
 
