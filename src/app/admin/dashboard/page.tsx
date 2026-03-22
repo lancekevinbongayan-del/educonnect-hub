@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -70,7 +69,7 @@ export default function AdminDashboard() {
   const [filterReason, setFilterReason] = useState('All');
   const [filterClass, setFilterClass] = useState('All');
 
-  // Authorization check: Verify admin status before querying protected data
+  // Authorization check: Verify admin status
   const adminDocRef = useMemoFirebase(() => 
     authUser ? doc(firestore, 'roles_admin', authUser.uid) : null
   , [firestore, authUser]);
@@ -85,8 +84,11 @@ export default function AdminDashboard() {
   const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
 
   useEffect(() => {
-    if (!isUserLoading && !isAdminChecking && (!authUser || !adminData)) {
-      router.push('/');
+    // Robust redirect logic: Only redirect if auth and admin checks are definitively finished
+    if (!isUserLoading && !isAdminChecking) {
+      if (!authUser || !adminData) {
+        router.push('/');
+      }
     }
   }, [authUser, isUserLoading, isAdminChecking, adminData, router]);
 
@@ -131,7 +133,7 @@ export default function AdminDashboard() {
     setFilterClass('All');
   };
 
-  if (isUserLoading || isAdminChecking || isVisitsLoading) {
+  if (isUserLoading || isAdminChecking || (authUser && adminData && isVisitsLoading)) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="animate-spin text-primary">
@@ -140,6 +142,9 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  // Fallback while redirecting or unauthorized
+  if (!authUser || !adminData) return null;
 
   return (
     <div className="min-h-screen flex gradient-bg">
