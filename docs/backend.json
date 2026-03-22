@@ -4,7 +4,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user of the EduConnect Hub application, which can be either an administrator or a visitor. Stores core profile information and access status.",
+      "description": "Represents an individual user of the EduConnect Hub system, who can be either an administrator or a visitor. Stores core authentication-related information (excluding passwords) and user management flags.",
       "properties": {
         "id": {
           "type": "string",
@@ -12,41 +12,37 @@
         },
         "email": {
           "type": "string",
-          "description": "The user's institutional email address, used for authentication.",
+          "description": "The unique institutional email address of the user, obtained from Google authentication. Used for login and identification.",
           "format": "email"
         },
-        "name": {
+        "fullName": {
           "type": "string",
-          "description": "The full name of the user as obtained from their Google profile."
+          "description": "The full name of the user, typically retrieved from their Google profile."
         },
-        "userType": {
+        "role": {
           "type": "string",
-          "description": "The classification of the user, either 'admin' or 'visitor'."
+          "description": "The assigned role of the user within the system, such as 'admin' or 'visitor'."
         },
         "isBlocked": {
           "type": "boolean",
-          "description": "Indicates whether the user's access has been blocked by an administrator."
-        },
-        "visitorClassificationId": {
-          "type": "string",
-          "description": "Reference to VisitorClassification. (Relationship: VisitorClassification 1:N User). Applicable only if userType is 'visitor'."
+          "description": "A flag indicating whether the user's access to the system has been blocked by an administrator."
         },
         "createdAt": {
           "type": "string",
-          "description": "Timestamp when the user account was created.",
+          "description": "Timestamp when the user account was first created in the system.",
           "format": "date-time"
         },
         "updatedAt": {
           "type": "string",
-          "description": "Timestamp of the last update to the user's information.",
+          "description": "Timestamp when the user account's information was last updated.",
           "format": "date-time"
         }
       },
       "required": [
         "id",
         "email",
-        "name",
-        "userType",
+        "fullName",
+        "role",
         "isBlocked",
         "createdAt",
         "updatedAt"
@@ -56,7 +52,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Department",
       "type": "object",
-      "description": "Represents a college department, used to categorize visitor affiliations.",
+      "description": "Represents a college department that visitors can select during their check-in process. This entity provides a standardized list for visitor input and dashboard filtering.",
       "properties": {
         "id": {
           "type": "string",
@@ -64,11 +60,7 @@
         },
         "name": {
           "type": "string",
-          "description": "The official name of the college department (e.g., 'Computer Science', 'Electrical Engineering')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief description or additional details about the department."
+          "description": "The official and unique name of the college department (e.g., 'Computer Science', 'Biology')."
         }
       },
       "required": [
@@ -80,7 +72,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "ReasonForVisit",
       "type": "object",
-      "description": "Represents a predefined reason why a visitor is checking into the institution.",
+      "description": "Represents a predefined reason that visitors can select for their visit during the check-in process. This entity supports consistent data collection and enables filtering for reports and the dashboard.",
       "properties": {
         "id": {
           "type": "string",
@@ -88,11 +80,7 @@
         },
         "reason": {
           "type": "string",
-          "description": "A concise description of the reason for the visit (e.g., 'Meeting with Faculty', 'Library Access')."
-        },
-        "description": {
-          "type": "string",
-          "description": "Additional details or elaboration for the reason for visit."
+          "description": "A descriptive and unique text detailing the purpose of a visit (e.g., 'Meeting with faculty', 'Library Access', 'Event Attendance')."
         }
       },
       "required": [
@@ -104,31 +92,27 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "VisitorClassification",
       "type": "object",
-      "description": "Represents predefined categories for visitors, allowing for better filtering and reporting on the dashboard.",
+      "description": "Represents distinct categories that visitors can belong to (e.g., 'Student', 'Faculty', 'Alumni', 'Guest'). This entity enables detailed filtering and segmentation in the admin dashboard's real-time statistics.",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique identifier for the VisitorClassification entity."
         },
-        "name": {
+        "classification": {
           "type": "string",
-          "description": "The name of the visitor classification (e.g., 'Undergraduate Student', 'Alumni', 'Prospective Student', 'External Guest')."
-        },
-        "description": {
-          "type": "string",
-          "description": "A brief description of this visitor classification."
+          "description": "The unique name of the visitor classification (e.g., 'Student', 'Alumni', 'Guest')."
         }
       },
       "required": [
         "id",
-        "name"
+        "classification"
       ]
     },
     "Visit": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Visit",
       "type": "object",
-      "description": "Records a single visit event by a user, including check-in/check-out times and associated visit details.",
+      "description": "Records a single instance of a user checking into the facility, capturing timestamps and contextual information. This data is critical for real-time tracking, historical logging, and generating summary reports.",
       "properties": {
         "id": {
           "type": "string",
@@ -140,21 +124,29 @@
         },
         "departmentId": {
           "type": "string",
-          "description": "Reference to the Department specified by the visitor for this visit. (Relationship: Department 1:N Visit)"
+          "description": "Reference to the Department the visitor specified during check-in. (Relationship: Department 1:N Visit)"
         },
         "reasonForVisitId": {
           "type": "string",
-          "description": "Reference to the ReasonForVisit provided by the visitor for this visit. (Relationship: ReasonForVisit 1:N Visit)"
+          "description": "Reference to the ReasonForVisit the visitor specified during check-in. (Relationship: ReasonForVisit 1:N Visit)"
+        },
+        "visitorClassificationId": {
+          "type": "string",
+          "description": "Reference to the VisitorClassification selected for this particular visit. (Relationship: VisitorClassification 1:N Visit)"
         },
         "checkInTime": {
           "type": "string",
-          "description": "Timestamp when the user checked into the premises.",
+          "description": "Timestamp indicating when the user checked into the facility.",
           "format": "date-time"
         },
         "checkOutTime": {
           "type": "string",
-          "description": "Optional timestamp when the user checked out from the premises.",
+          "description": "Timestamp indicating when the user checked out of the facility. This field is null if the user is currently checked in.",
           "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the visit (e.g., 'checked-in', 'checked-out'). This helps in real-time visitor tracking."
         }
       },
       "required": [
@@ -162,7 +154,9 @@
         "userId",
         "departmentId",
         "reasonForVisitId",
-        "checkInTime"
+        "visitorClassificationId",
+        "checkInTime",
+        "status"
       ]
     }
   },
@@ -181,11 +175,27 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "User profiles. Contains 'userType' and 'isBlocked' fields. Authorization: A user can read/write their own profile; administrators can read/write all profiles.",
+          "description": "Stores individual user profiles, including their authentication-related information, role, and block status. This collection serves as the primary source for user management and profile data. The 'role' field is for data purposes, while 'roles_admin' collection is used for authorization.",
           "params": [
             {
               "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
+              "description": "The unique identifier of the user, matching Firebase Authentication UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "A dedicated collection for Database Access Control (DBAC). The *existence* of a document at this path signifies that the corresponding 'userId' has administrator privileges. This is crucial for Authorization Independence and efficient security rule checks, avoiding 'get()' calls on the user's main profile.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user, matching Firebase Authentication UID. The document's existence at this path grants admin role."
             }
           ]
         }
@@ -197,43 +207,43 @@
           "schema": {
             "$ref": "#/backend/entities/Department"
           },
-          "description": "Master list of college departments. Authorization: Read-only for visitors, read/write for administrators.",
+          "description": "A lookup collection containing predefined college departments. Readable by all authenticated users (for visitor check-in and dashboard filtering), writable only by administrators.",
           "params": [
             {
               "name": "departmentId",
-              "description": "Unique identifier for the department."
+              "description": "The unique identifier of the department."
             }
           ]
         }
       },
       {
-        "path": "/reason_for_visits/{reasonForVisitId}",
+        "path": "/reasonsForVisit/{reasonForVisitId}",
         "definition": {
           "entityName": "ReasonForVisit",
           "schema": {
             "$ref": "#/backend/entities/ReasonForVisit"
           },
-          "description": "Master list of reasons for visiting. Authorization: Read-only for visitors, read/write for administrators.",
+          "description": "A lookup collection containing predefined reasons for visits. Readable by all authenticated users (for visitor check-in and dashboard filtering), writable only by administrators.",
           "params": [
             {
               "name": "reasonForVisitId",
-              "description": "Unique identifier for the reason for visit."
+              "description": "The unique identifier of the reason for visit."
             }
           ]
         }
       },
       {
-        "path": "/visitor_classifications/{classificationId}",
+        "path": "/visitorClassifications/{visitorClassificationId}",
         "definition": {
           "entityName": "VisitorClassification",
           "schema": {
             "$ref": "#/backend/entities/VisitorClassification"
           },
-          "description": "Master list of visitor classifications. Authorization: Read-only for visitors, read/write for administrators. Referenced by User profiles.",
+          "description": "A lookup collection containing predefined visitor classifications. Readable by all authenticated users (for visitor check-in and dashboard filtering), writable only by administrators.",
           "params": [
             {
-              "name": "classificationId",
-              "description": "Unique identifier for the visitor classification."
+              "name": "visitorClassificationId",
+              "description": "The unique identifier of the visitor classification."
             }
           ]
         }
@@ -245,32 +255,16 @@
           "schema": {
             "$ref": "#/backend/entities/Visit"
           },
-          "description": "Records of individual visits. Includes denormalized 'userId', 'userEmail', 'userName', 'userType', 'visitorClassificationId', 'visitorClassificationName', 'departmentName', and 'reasonForVisitName' for Authorization Independence and efficient admin dashboard filtering/display. Authorization: A visitor can create/update their own visit (e.g., check-out) and read their own historical visits. Administrators can read all visits for dashboard and reporting.",
+          "description": "Records individual visitor check-in and check-out events. This collection is crucial for real-time tracking and historical reporting. It includes denormalized fields (e.g., 'userEmail', 'userFullName', 'departmentName', 'reasonForVisitName', 'visitorClassificationName', 'userRole') from related entities to enable efficient dashboard filtering and reporting without requiring 'get()' calls in security rules or client-side joins. Visitors can create and update their own visits, while administrators have full read/write/list access.",
           "params": [
             {
               "name": "visitId",
-              "description": "Unique identifier for the visit record."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/admin_roles/{adminUid}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Marker collection for defining administrators. The existence of a document at this path (with the user's UID as the document ID) grants administrative privileges. This supports Database-Backed Access Control (DBAC) for security rules. Authorization: Only administrators (or server-side processes for initial setup) can create/delete documents in this collection. Admins can read their own document for rule validation.",
-          "params": [
-            {
-              "name": "adminUid",
-              "description": "The Firebase Authentication UID of the administrator."
+              "description": "The unique identifier for a specific visit record."
             }
           ]
         }
       }
     ],
-    "reasoning": "The recommended Firestore structure for EduConnect Hub prioritizes Authorization Independence and efficient querying for the Admin Dashboard. Authorization Independence (CRITICAL): 1. Denormalized Visit Records: The /visits/{visitId} collection is the cornerstone of this design. Each Visit document includes extensively denormalized fields from related entities, such as userEmail, userName, userType, visitorClassificationId, visitorClassificationName, departmentName, and reasonForVisitName. This strategy eliminates the need for get() calls in security rules to determine access permissions or to fetch display/filter data for the Admin Dashboard. For example, an admin user's ability to read all visits doesn't require checking the userType of the associated User document, as userType is directly present in the Visit document. Similarly, a visitor can easily be restricted to their own Visit records by checking request.auth.uid == resource.data.userId without needing to fetch their User profile. 2. Global Admin Roles: Administrative privileges are managed through a dedicated /admin_roles/{adminUid} collection. The mere existence of a document at this path (where {adminUid} is the Firebase Authentication UID) grants administrative access. This allows security rules to check for admin status using a simple exists() call, which is highly performant and doesn't create hierarchical dependencies. Querying for Admin Dashboard (QAPs - Rules are not Filters): 1. Top-Level /visits Collection: By placing Visit records in a top-level collection (/visits), administrators can perform collection group queries (implicitly, by simply querying the collection directly) across all visits. The extensive denormalization within each Visit document (e.g., departmentName, visitorClassificationName) ensures that all necessary data for real-time statistics and filtering is available directly within the queried documents. This allows admins to query /visits with where clauses on these denormalized fields (e.g., where('departmentName', '==', 'Computer Science')) without requiring additional document reads or complex join logic within security rules. This makes the dashboard queries efficient and directly supported by Firestore's indexing capabilities. 2. Master Data Collections: Collections like /departments, /reason_for_visits, and /visitor_classifications serve as master data lists. They are designed for read-only access by visitors (for dropdowns during check-in) and read/write access by administrators. Their homogeneous security posture simplifies rules significantly. Since these are smaller, static collections, they are easily listed and consumed by the UI for filtering options. Visitors can also list these collections to populate their check-in forms, adhering to QAPs. Other Principles: Structural Segregation: Master data (Departments, Reasons, Classifications) are separated from user profiles and transactional visit logs, each with distinct security needs. Access Modeling: Path-based ownership is used for users/{userId}. Global roles are implemented via /admin_roles. Collaborative data isn't directly applicable here but the principles are applied for global read access by admins. Data Clarity: checkInTime and checkOutTime clearly define the state of a visit (active if checkOutTime is null)."
+    "reasoning": "The Firestore structure for EduConnect Hub is designed to meet strict security requirements, ensure scalability for real-time dashboards, and simplify security rules, adhering to the core design principles of Authorization Independence, Clarity of Intent, DBAC, QAPs, and Invariants.\n\n**Authorization Independence:**\n1.  **Role-Based Access for Admins (DBAC):** Administrative access is primarily managed through a dedicated top-level collection: `/roles_admin/{userId}`. The *existence* of a document at `roles_admin/$(request.auth.uid)` directly grants administrative privileges. This design is critical for Authorization Independence as it completely eliminates the need for `get()` calls to the `/users` collection to check a user's `role` field within security rules. This makes authorization checks atomic, highly efficient, and less prone to transaction complexities.\n2.  **User-Specific Data:** For user-owned data, such as a visitor's check-in/out records (`/visits/{visitId}`), the document itself contains `userId`. Security rules can directly compare `request.auth.uid` with `resource.data.userId` for ownership validation without external `get()` calls.\n\n**QAPs (Rules are not Filters) and Structural Segregation:**\n1.  **Admins' Real-time Dashboard:** The `/visits/{visitId}` collection is a single, top-level collection designed for the admin's real-time dashboard. Admins are granted explicit `list` access to this collection, which allows them to efficiently query and filter all visit records without any implicit filtering being done by security rules (thus satisfying QAPs for admins). The denormalized fields within each `Visit` document (explained below) further aid this, as dashboard filters can directly query document fields.\n2.  **Visitors' Access:** Visitors are *not* granted `list` access to the entire `/visits` collection. This prevents visitors from retrieving a broad range of data that they are not authorized to see, adhering strictly to QAPs. Visitors are only permitted to `create` their own new visits, `update` their current visit (e.g., check-out), and `get` their specific visit documents based on their `userId` matching `request.auth.uid`.\n3.  **Reference Data:** Static reference data like Departments, Reasons for Visit, and Visitor Classifications are stored in their own top-level collections (`/departments`, `/reasonsForVisit`, `/visitorClassifications`). These collections have a homogeneous security posture: read-only for all authenticated users (visitors and admins alike) to enable client-side selection during check-in and dashboard filtering, and writeable only by administrators. This clear segregation simplifies rules significantly.\n\n**Denormalization for Performance and Clarity:**\n*   The `Visit` entity includes crucial denormalized fields: `userEmail`, `userFullName`, `userRole` (from `User`), `departmentName` (from `Department`), `reasonForVisitName` (from `ReasonForVisit`), and `visitorClassificationName` (from `VisitorClassification`). This denormalization is vital for the real-time admin dashboard. It allows for efficient querying, filtering, and display of visit details without requiring expensive and complex joins or `get()` calls within security rules or client-side application logic for every visit record. This directly supports the requirement for interactive filters and real-time statistics by making the `Visit` documents self-contained with all necessary display and filtering attributes."
   }
 }

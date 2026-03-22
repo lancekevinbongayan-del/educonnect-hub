@@ -3,101 +3,91 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * EduConnect Hub Security Rules
-     * 
-     * Philosophy:
-     * This ruleset implements a dual-access model: Ownership-based access for visitors and 
-     * Database-Backed Access Control (DBAC) for administrators. Security is prioritized 
-     * by using denormalized data within documents to ensure fast, independent authorization 
-     * decisions without excessive cross-document lookups.
-     * 
+     * EDUCONNECT HUB - SECURITY RULES PHILOSOPHY
+     *
+     * Core Philosophy: 
+     * This ruleset implements a dual-layer authorization model. User-owned data is secured via 
+     * direct ownership checks (UID matching), while administrative access is controlled through 
+     * a Database Access Control (DBAC) pattern using a dedicated '/roles_admin' collection.
+     *
      * Data Structure:
-     * - /users/{userId}: Private user profiles containing classification and status.
-     * - /visits/{visitId}: A flat collection of visit logs. This is the primary 
-     *   entity for the Admin Dashboard, containing denormalized user and department info.
-     * - /departments, /reason_for_visits, /visitor_classifications: Master data 
-     *   lists used for populating UI forms.
-     * - /admin_roles/{adminUid}: A marker collection where the presence of a 
-     *   document grants global administrative privileges.
-     * 
+     * - /users/{userId}: Private user profiles and management flags.
+     * - /roles_admin/{userId}: An authorization-only collection where the presence of a 
+     *   document signifies admin status.
+     * - /visits/{visitId}: A flat collection of check-in records for real-time tracking.
+     * - /departments, /reasonsForVisit, /visitorClassifications: Static reference data.
+     *
      * Key Security Decisions:
-     * 1. Authorization Independence: The 'Visit' entity includes 'userId' and 'userType' 
-     *    internally, allowing rules to verify access without fetching the 'User' profile.
-     * 2. DBAC: Admin status is verified via an `exists()` check on the 'admin_roles' collection.
-     * 3. Immutability: Critical relational fields (like 'userId' in a visit or 'id' in a user 
-     *    profile) are enforced as immutable to prevent account hijacking or data corruption.
-     * 4. Structural Segregation: Administrative markers are separated from user profiles 
-     *    to prevent accidental privilege escalation via profile updates.
+     * 1. Authorization Independence: Admin status is checked via the 'roles_admin' collection 
+     *    using 'exists()', decoupling authorization from the main 'users' profile.
+     * 2. QAP Compliance: Visitors are denied 'list' access to the global '/visits' collection 
+     *    to prevent data scraping; only individual 'get' or 'create' operations are allowed.
+     * 3. Prototyping Flexibility: While ownership and relational integrity (userId matching) 
+     *    are strictly enforced, data schemas and types are not validated to allow rapid iteration.
+     * 4. Denormalization for Performance: 'Visit' documents are expected to contain denormalized 
+     *    user and department data to facilitate high-speed dashboard filtering without rule-level joins.
      */
 
-    // --- Global Helper Functions ---
+    // --- GLOBAL HELPER FUNCTIONS ---
 
     /**
-     * @description Checks if the request is from a signed-in user.
+     * Checks if the request is coming from an authenticated user.
      */
     function isSignedIn() {
       return request.auth != null;
     }
 
     /**
-     * @description Checks if the provided UID matches the authenticated user's UID.
+     * Checks if the authenticated user has a corresponding document in the roles_admin collection.
+     * This is the primary check for administrative privileges.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Checks if the provided UID matches the authenticated user's UID.
      */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    /**
-     * @description Checks if the authenticated user is registered in the admin_roles collection.
-     */
-    function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/admin_roles/$(request.auth.uid));
-    }
+    // --- COLLECTION RULES ---
 
     /**
-     * @description Combines existence and ownership checks for updates and deletes.
-     */
-    function isExistingOwner(userId) {
-      return resource != null && isOwner(userId);
-    }
-
-    // --- Collection Rules ---
-
-    /**
-     * @description User profile management. Users control their own data; Admins manage all.
+     * @description Rules for user profiles. Users can manage their own profile; admins manage all.
      * @path /users/{userId}
-     * @allow Authenticated user with UID 'abc' (get, update) if userId is 'abc'.
-     * @deny User 'abc' (update) if attempting to change their internal 'id' field.
-     * @principle Enforces path-based ownership and relational integrity for profile IDs.
+     * @allow (create) if user is authenticated and userId matches their own UID.
+     * @deny (list) if user is not an administrator.
+     * @principle Enforces path-based ownership and self-provisioning.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isOwner(userId) || isAdmin();
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if (isOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id;
-      allow delete: if isAdmin();
+      allow update: if resource != null && (isOwner(userId) || isAdmin()) && request.resource.data.id == resource.data.id;
+      allow delete: if resource != null && isAdmin();
     }
 
     /**
-     * @description Records of individual visits. Denormalized for dashboard efficiency.
-     * @path /visits/{visitId}
-     * @allow Visitor 'user_123' (create) if 'userId' field matches 'user_123'.
-     * @deny Visitor 'user_123' (update) if attempting to change the 'userId' of an existing record.
-     * @principle Uses denormalized ownership fields to authorize transactional logs.
+     * @description DBAC collection for admin roles. Document existence defines access.
+     * @path /roles_admin/{userId}
+     * @allow (get) if user is checking their own admin status or is an admin.
+     * @deny (write) if requester is not already an admin.
+     * @principle Authorization Independence via dedicated role collection.
      */
-    match /visits/{visitId} {
-      allow get: if isAdmin() || (resource != null && isOwner(resource.data.userId));
-      allow list: if isAdmin(); // CRITICAL: Path-based list not possible for visitors in top-level collection.
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if (isAdmin() || isExistingOwner(resource.data.userId)) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isAdmin();
+    match /roles_admin/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     /**
-     * @description Master list of college departments.
-     * @path /departments/{departmentId}
-     * @allow Any signed-in user (get, list).
-     * @deny Any visitor (create, update, delete).
-     * @principle Provides read-only access to configuration data for visitors.
+     * @description Lookup data for Departments.
+     * @path /departments/{id}
+     * @allow (read) for any authenticated user to populate check-in forms.
+     * @deny (write) for non-admin users.
+     * @principle Public read with owner-only (admin) writes for reference data.
      */
     match /departments/{departmentId} {
       allow get, list: if isSignedIn();
@@ -105,40 +95,43 @@ service cloud.firestore {
     }
 
     /**
-     * @description Master list of reasons for visiting.
-     * @path /reason_for_visits/{reasonForVisitId}
-     * @allow Any signed-in user (get, list).
-     * @deny Any visitor (create, update, delete).
-     * @principle Restricted administrative control over operational metadata.
+     * @description Lookup data for Reasons for Visit.
+     * @path /reasonsForVisit/{id}
+     * @allow (read) for any authenticated user.
+     * @deny (write) for non-admin users.
+     * @principle Public read with owner-only (admin) writes for reference data.
      */
-    match /reason_for_visits/{reasonForVisitId} {
+    match /reasonsForVisit/{reasonForVisitId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isAdmin();
     }
 
     /**
-     * @description Master list of visitor classifications.
-     * @path /visitor_classifications/{classificationId}
-     * @allow Any signed-in user (get, list).
-     * @deny Any visitor (create, update, delete).
-     * @principle Centralized classification management for reporting accuracy.
+     * @description Lookup data for Visitor Classifications.
+     * @path /visitorClassifications/{id}
+     * @allow (read) for any authenticated user.
+     * @deny (write) for non-admin users.
+     * @principle Public read with owner-only (admin) writes for reference data.
      */
-    match /visitor_classifications/{classificationId} {
+    match /visitorClassifications/{visitorClassificationId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isAdmin();
     }
 
     /**
-     * @description Marker collection for defining administrators.
-     * @path /admin_roles/{adminUid}
-     * @allow Signed-in user (get) to verify their own admin status.
-     * @deny Any user (create, update, delete) except via existing admins or system processes.
-     * @principle Implements DBAC (Database-Backed Access Control) via document existence.
+     * @description Records of facility visits. Visitors create their records; Admins track all.
+     * @path /visits/{visitId}
+     * @allow (create) if userId in document matches authenticated user's UID.
+     * @allow (list) for admins to power the real-time dashboard.
+     * @deny (list) for visitors to ensure privacy and QAP compliance.
+     * @principle Relational integrity and role-based segregation for tracking.
      */
-    match /admin_roles/{adminUid} {
-      allow get: if isSignedIn();
+    match /visits/{visitId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if resource != null && (resource.data.userId == request.auth.uid || isAdmin()) && request.resource.data.userId == resource.data.userId;
+      allow delete: if resource != null && isAdmin();
     }
   }
 }
