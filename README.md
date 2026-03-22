@@ -4,7 +4,7 @@ A highly responsive, real-time visitor management and analytics platform designe
 
 ## Live Demo
 [(educonnect-hub-bay.vercel.app)](https://educonnect-hub-bay.vercel.app/)
->>>>>>> 921dee6c9e70172347d9c9d9a76fcd6cab88324e
+
 
 To experience the full functionality of the system, use the following institutional credentials:
 
@@ -13,7 +13,6 @@ To experience the full functionality of the system, use the following institutio
 - **Visitor Access**: Any email ending in `@neu.edu.ph` (e.g., `student@neu.edu.ph`)
 - 
 =======
->>>>>>> 921dee6c9e70172347d9c9d9a76fcd6cab88324e
 ## 🚀 Features
 
 ### For Visitors
