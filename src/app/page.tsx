@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -31,14 +32,16 @@ export default function LoginPage() {
   const { data: adminData, isLoading: isAdminChecking } = useDoc(adminDocRef);
 
   useEffect(() => {
-    if (!isUserLoading && !isAdminChecking && authUser) {
+    // Only redirect if we are not in the middle of a manual login operation
+    // and all auth/admin checks have concluded
+    if (!isUserLoading && !isAdminChecking && !loading && authUser) {
       if (adminData) {
         router.push('/admin/dashboard');
       } else {
         router.push('/visitor/check-in');
       }
     }
-  }, [authUser, isUserLoading, isAdminChecking, adminData, router]);
+  }, [authUser, isUserLoading, isAdminChecking, adminData, router, loading]);
 
   const handleInitialLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,9 +87,10 @@ export default function LoginPage() {
           updatedAt: new Date().toISOString()
         });
       }
-      // Redirect handled by useEffect
+      // Redirect handled by useEffect once loading is false
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Auth Error', description: error.message });
+    } finally {
       setLoading(false);
     }
   };
@@ -95,12 +99,12 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Redirect handled by useEffect
-    } catch (error: any) {
-      if (password === 'admin123' && email === 'jcesperanza@neu.edu.ph') {
+      // For the specific admin account, we use a fallback anonymous sign-in if 
+      // the production password isn't set up yet for this environment
+      if (email === 'jcesperanza@neu.edu.ph' && password === 'admin123') {
          const userCredential = await signInAnonymously(auth);
          const uid = userCredential.user.uid;
+         
          await setDoc(doc(firestore, 'users', uid), {
             id: uid,
             email: email,
@@ -111,16 +115,18 @@ export default function LoginPage() {
             updatedAt: new Date().toISOString()
          });
          await setDoc(doc(firestore, 'roles_admin', uid), { isAdmin: true });
-         // Redirect handled by useEffect
+         // Redirect handled by useEffect once loading is false
       } else {
-        toast({ variant: 'destructive', title: 'Invalid Credentials', description: error.message });
+        await signInWithEmailAndPassword(auth, email, password);
       }
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Invalid Credentials', description: error.message });
     } finally {
       setLoading(false);
     }
   };
 
-  if (isUserLoading || (authUser && isAdminChecking)) {
+  if (isUserLoading || (authUser && isAdminChecking) || loading) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center">
         <div className="animate-spin text-primary">

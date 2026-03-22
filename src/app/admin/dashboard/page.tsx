@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -84,11 +85,12 @@ export default function AdminDashboard() {
   const { data: visitsRaw, isLoading: isVisitsLoading } = useCollection(visitsQuery);
 
   useEffect(() => {
+    // Definitive redirect logic: only redirect if checks are CONCLUDED
     if (!isUserLoading && !isAdminChecking) {
       if (!authUser) {
         router.push('/');
       } else if (!adminData) {
-        // If logged in but NOT an admin, push to visitor page
+        // Logged in but confirmed NOT an admin
         router.push('/visitor/check-in');
       }
     }
@@ -145,7 +147,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // Fallback while redirecting or unauthorized
+  // Final protection to ensure UI doesn't render unauthorized content
   if (!authUser || !adminData) return null;
 
   return (
