@@ -87,7 +87,6 @@ export default function LoginPage() {
         });
       }
       
-      // Session status is now handled automatically by FirebaseProvider
       router.push('/visitor/check-in');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Auth Error', description: error.message });

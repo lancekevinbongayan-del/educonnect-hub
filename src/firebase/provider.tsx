@@ -82,7 +82,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       const { user } = userAuthState;
       const sessionRef = doc(firestore, 'user_sessions', user.uid);
       
-      const deviceType = /Mobile|Android|iP(hone|ad)/i.test(navigator.userAgent) ? 'Mobile' : 'Web';
+      const deviceType = typeof navigator !== 'undefined' && /Mobile|Android|iP(hone|ad)/i.test(navigator.userAgent) ? 'Mobile' : 'Web';
 
       const updatePresence = (status: 'online' | 'offline') => {
         setDoc(sessionRef, {
@@ -94,7 +94,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
           deviceType,
           lastActive: serverTimestamp(),
           status: status
-        }, { merge: true });
+        }, { merge: true }).catch(console.error);
       };
 
       // Set online
@@ -105,13 +105,13 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         setDoc(sessionRef, {
           lastActive: serverTimestamp(),
           status: 'online'
-        }, { merge: true });
+        }, { merge: true }).catch(console.error);
       }, 60000);
 
       // Tab closure cleanup
       const handleUnload = () => {
-        // Use setDoc without serverTimestamp as it might be unreliable during unload
-        setDoc(sessionRef, { status: 'offline', lastActive: new Date().toISOString() }, { merge: true });
+        // Use synchronous-looking update for unload if possible, but firestore is async
+        updatePresence('offline');
       };
 
       window.addEventListener('beforeunload', handleUnload);
@@ -119,6 +119,8 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       return () => {
         clearInterval(heartbeat);
         window.removeEventListener('beforeunload', handleUnload);
+        // When user logs out or effect cleans up, set offline
+        updatePresence('offline');
       };
     }
   }, [userAuthState.user, firestore]);

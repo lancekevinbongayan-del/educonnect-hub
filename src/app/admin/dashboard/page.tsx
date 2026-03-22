@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, orderBy, limit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 import { format, isToday, isWithinInterval, subDays } from 'date-fns';
 
 const DEPARTMENTS = [
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
     if (!isUserLoading && !isAdminChecking) {
       if (!authUser) {
         router.push('/');
-      } else if (!adminData) {
+      } else if (adminData === null && !isAdminChecking) {
         router.push('/visitor/check-in');
       }
     }
@@ -131,14 +131,12 @@ export default function AdminDashboard() {
   }, [filteredVisits]);
 
   const handleLogout = async () => {
-    if (authUser) {
-      await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
-        status: 'offline',
-        lastActive: serverTimestamp()
-      }, { merge: true });
+    try {
+      await auth.signOut();
+      router.replace('/');
+    } catch (error) {
+      console.error("Logout failed", error);
     }
-    await auth.signOut();
-    router.push('/');
   };
 
   const clearFilters = () => {
