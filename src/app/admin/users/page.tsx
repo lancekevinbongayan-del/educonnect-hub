@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { 
   Users, Search, UserCircle, LayoutDashboard, FileText, LogOut, 
-  MoreHorizontal, Ban, ShieldCheck, Mail, Activity
+  MoreHorizontal, Ban, ShieldCheck, Mail, Activity, AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter 
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore, useUser, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, doc, updateDoc, query, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -28,6 +34,8 @@ export default function UserManagement() {
   const { user: authUser, isUserLoading } = useUser();
   
   const [search, setSearch] = useState('');
+  const [blockingUser, setBlockingUser] = useState<any>(null);
+  const [blockReason, setBlockReason] = useState('');
 
   // Authorization check
   const adminDocRef = useMemoFirebase(() => 
@@ -55,20 +63,38 @@ export default function UserManagement() {
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleBlock = async (user: any) => {
-    if (user.role === 'admin') {
-      toast({ variant: 'destructive', title: 'Action Denied', description: 'Administrators cannot be blocked.' });
-      return;
-    }
-
+  const handleBlockConfirm = async () => {
+    if (!blockingUser) return;
+    
     try {
-      await updateDoc(doc(firestore, 'users', user.id), {
-        isBlocked: !user.isBlocked,
+      await updateDoc(doc(firestore, 'users', blockingUser.id), {
+        isBlocked: true,
+        blockReason: blockReason,
+        blockedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });
       toast({ 
-        title: user.isBlocked ? 'User Unblocked' : 'User Blocked', 
-        description: `${user.fullName || user.name} access updated.` 
+        title: 'User Blocked', 
+        description: `${blockingUser.fullName || blockingUser.name} access has been restricted.` 
+      });
+      setBlockingUser(null);
+      setBlockReason('');
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
+    }
+  };
+
+  const unblockUser = async (user: any) => {
+    try {
+      await updateDoc(doc(firestore, 'users', user.id), {
+        isBlocked: false,
+        blockReason: null,
+        blockedAt: null,
+        updatedAt: new Date().toISOString()
+      });
+      toast({ 
+        title: 'User Unblocked', 
+        description: `${user.fullName || user.name} access restored.` 
       });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
@@ -187,9 +213,20 @@ export default function UserManagement() {
                     </TableCell>
                     <TableCell>
                       {user.isBlocked ? (
-                        <Badge variant="destructive" className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100">
-                          Blocked
-                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Badge variant="destructive" className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100 cursor-pointer">
+                              Blocked
+                            </Badge>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="w-56">
+                            <div className="p-2 space-y-1">
+                              <p className="text-[10px] font-bold uppercase text-muted-foreground">Reason</p>
+                              <p className="text-xs italic">{user.blockReason || 'No reason provided'}</p>
+                              <p className="text-[10px] text-muted-foreground mt-2">{user.blockedAt ? `Since ${new Date(user.blockedAt).toLocaleDateString()}` : ''}</p>
+                            </div>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       ) : (
                         <Badge variant="secondary" className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100">
                           Active
@@ -207,19 +244,21 @@ export default function UserManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => toggleBlock(user)}>
-                            {user.isBlocked ? (
-                              <>
-                                <ShieldCheck className="mr-2 h-4 w-4" />
-                                Unblock Access
-                              </>
-                            ) : (
-                              <>
-                                <Ban className="mr-2 h-4 w-4" />
-                                Block User
-                              </>
-                            )}
-                          </DropdownMenuItem>
+                          {user.isBlocked ? (
+                            <DropdownMenuItem onClick={() => unblockUser(user)}>
+                              <ShieldCheck className="mr-2 h-4 w-4" />
+                              Unblock Access
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem 
+                              className="text-destructive" 
+                              disabled={user.role === 'admin'}
+                              onClick={() => setBlockingUser(user)}
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              Block User
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -230,6 +269,36 @@ export default function UserManagement() {
           </Card>
         </div>
       </main>
+
+      {/* Block Reason Dialog */}
+      <Dialog open={!!blockingUser} onOpenChange={() => setBlockingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Confirm Access Restriction
+            </DialogTitle>
+            <DialogDescription>
+              You are about to block <strong>{blockingUser?.fullName}</strong>. They will be unable to check into any NEU facilities until unblocked.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for Blocking</Label>
+              <Textarea 
+                id="reason" 
+                placeholder="e.g. Disciplinary action, Policy violation, Expired credentials..." 
+                value={blockReason}
+                onChange={(e) => setBlockReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBlockingUser(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleBlockConfirm}>Restrict Access</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

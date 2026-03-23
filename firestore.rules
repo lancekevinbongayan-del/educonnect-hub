@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -16,12 +17,6 @@ service cloud.firestore {
      *   document signifies admin status.
      * - /visits/{visitId}: A flat collection of check-in records for real-time tracking.
      * - /user_sessions/{sessionId}: Real-time presence tracking.
-     *
-     * Key Security Decisions:
-     * 1. Authorization Independence: Admin status is checked via the 'roles_admin' collection 
-     *    using 'exists()', decoupling authorization from the main 'users' profile.
-     * 2. QAP Compliance: Visitors are denied 'list' access to the global '/visits' collection 
-     *    to prevent data scraping; only individual 'get' or 'create' operations are allowed.
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
@@ -36,6 +31,10 @@ service cloud.firestore {
 
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isBlocked() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isBlocked == true;
     }
 
     // --- COLLECTION RULES ---
@@ -73,12 +72,12 @@ service cloud.firestore {
     }
 
     /**
-     * @description Records of facility visits.
+     * @description Records of facility visits. Blocked users cannot create new visits.
      */
     match /visits/{visitId} {
       allow get: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && !isBlocked();
       allow update: if resource != null && (resource.data.userId == request.auth.uid || isAdmin()) && request.resource.data.userId == resource.data.userId;
       allow delete: if resource != null && isAdmin();
     }

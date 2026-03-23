@@ -28,6 +28,15 @@
           "type": "boolean",
           "description": "A flag indicating whether the user's access to the system has been blocked by an administrator."
         },
+        "blockReason": {
+          "type": "string",
+          "description": "The reason why the user was blocked, if applicable."
+        },
+        "blockedAt": {
+          "type": "string",
+          "description": "Timestamp when the user was blocked.",
+          "format": "date-time"
+        },
         "createdAt": {
           "type": "string",
           "description": "Timestamp when the user account was first created in the system.",

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   CheckCircle2, LogOut, MapPin, UserCircle, School, Building2, 
-  Library as LibraryIcon, GraduationCap, Users, BookOpen, ChevronRight, Menu
+  Library as LibraryIcon, GraduationCap, Users, BookOpen, ChevronRight, Menu, ShieldAlert, Info
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -99,6 +100,15 @@ export default function VisitorCheckIn() {
       return;
     }
 
+    if (profile?.isBlocked) {
+      toast({
+        variant: 'destructive',
+        title: 'Access Restricted',
+        description: 'Your institutional access has been suspended.',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       await addDoc(collection(firestore, 'visits'), {
@@ -128,7 +138,6 @@ export default function VisitorCheckIn() {
 
   const handleLogout = async () => {
     if (authUser) {
-      // Explicitly mark session offline on logout
       await setDoc(doc(firestore, 'user_sessions', authUser.uid), {
         status: 'offline',
         lastActive: serverTimestamp()
@@ -142,6 +151,43 @@ export default function VisitorCheckIn() {
 
   if (isUserLoading || !profile) return null;
 
+  // Blocked Screen
+  if (profile.isBlocked) {
+    return (
+      <div className="min-h-screen gradient-bg flex items-center justify-center p-6">
+        <Card className="w-full max-w-lg overflow-hidden glass-card border-none shadow-2xl">
+          <div className="bg-destructive/10 p-8 flex flex-col items-center text-center">
+            <div className="bg-destructive/20 p-5 rounded-full mb-6 ring-4 ring-destructive/10">
+              <ShieldAlert className="h-12 w-12 text-destructive" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-2">Access Restricted</h2>
+            <p className="text-destructive font-medium uppercase tracking-widest text-[10px]">Institutional Security Protocol</p>
+          </div>
+          <CardContent className="p-10 space-y-8">
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                <Info className="h-5 w-5 text-white/40 shrink-0 mt-0.5" />
+                <div className="space-y-1 text-left">
+                  <p className="text-xs font-bold uppercase tracking-widest text-white/40">Restriction Reason</p>
+                  <p className="text-white/80 leading-relaxed italic">"{profile.blockReason || "Your campus access has been temporarily suspended by the administration."}"</p>
+                </div>
+              </div>
+              <p className="text-sm text-white/40 leading-relaxed text-center">
+                Please proceed to the <strong>Office of the Dean</strong> or the <strong>Security Command Center</strong> to resolve this restriction and restore your institutional access.
+              </p>
+            </div>
+            
+            <div className="pt-4 space-y-3">
+              <Button onClick={handleLogout} className="w-full h-14 text-lg font-bold rounded-2xl bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all">
+                Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (submitted) {
     return (
       <div className="min-h-screen gradient-bg flex items-center justify-center p-6">
@@ -151,7 +197,7 @@ export default function VisitorCheckIn() {
               <CheckCircle2 className="h-16 w-16 text-primary" />
             </div>
           </div>
-          <h2 className="text-3xl font-bold mb-4 text-white">Welcome to NEU Library!</h2>
+          <h2 className="text-3xl font-bold mb-4 text-white">Welcome to NEU!</h2>
           <p className="text-white/60 mb-10 leading-relaxed">
             Thank you for checking in, <span className="text-white font-medium">{profile.fullName}</span>. Your visit to the <span className="text-white font-medium">{office}</span> ({department}) as <span className="text-white font-medium">{classification}</span> is now logged.
           </p>
